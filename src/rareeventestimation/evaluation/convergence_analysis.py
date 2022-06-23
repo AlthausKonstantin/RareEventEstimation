@@ -1,27 +1,41 @@
-"""Functions to do an emprical analysis of convergence behaviour.
-"""
+"""Functions to do an empirical analysis of convergence behavior."""
 
+from copy import deepcopy
 import tempfile
 from numpy import average, sqrt, zeros, var, nan
 from scipy.stats import variation
-from rareeventestimation.problem import Problem
-from rareeventestimation.solver import Solver
+from rareeventestimation.problem.problem import Problem
+from rareeventestimation.solver import CBREE, Solver
 from numpy.random import default_rng
 import pandas as pd
 from os import path
 import gc
 import hashlib
 import time
-def do_multiple_solves(prob:Problem, solver:Solver, num_runs:int, dir= ".", prefix="", verbose=True, reset_dict=None, save_other=False, other_list=None, addtnl_cols= None):
-    """Solve `prob` with `solver.solve()` for  `num_runs` times.
+
+def do_multiple_solves(prob:Problem,
+                       solver:Solver,
+                       num_runs:int,
+                       dir= ".",
+                       prefix="",
+                       verbose=True,
+                       reset_dict=None,
+                       save_other=False,
+                       other_list=None,
+                       addtnl_cols= None) -> None:
+    """Call solver multiple times and save results.
 
     Args:
         prob (Problem): Instance of Problem class.
         solver (Solver): Instance of Solver class.
-        num_runs (int): Sample size.
-
-    Returns:
-        [pandas.DataFrame, list]: information on reasult, list of solution objects
+        num_runs (int): How many times `solver` will be called.
+        dir (str, optional): Where to save the results as a csv file. Defaults to ".".
+        prefix (str, optional): Prefix to csv file name. Defaults to "".
+        verbose (bool, optional): Whether to print some information during solving. Defaults to True.
+        reset_dict (dict, optional): Reset the attributes of `solver` after each run according to this dict. Defaults to None.
+        save_other (bool, optional): Whether to save the entries from `other` (attribute of solution object) in the csv file. Defaults to False.
+        other_list (_type_, optional): Whether to save these entries from `other` (attribute of solution object) in the csv file.. Defaults to None.
+        addtnl_cols (dict, optional): Add columns with key names and fill with values from this dict. Defaults to None.
     """
     hash = hashlib.sha1()
     hash.update(str(time.time()).encode('utf-8'))
@@ -48,12 +62,13 @@ def do_multiple_solves(prob:Problem, solver:Solver, num_runs:int, dir= ".", pref
         df["Cost"]=solution.costs
         df["Steps"]=solution.num_steps
         df["Message"]=solution.msg
-        if save_other and other_list is None:
-            for c in solution.other.keys():
-                df[c] = solution.other[c]
-        if other_list is not None:
-            for c in other_list:
-                df[c] = solution.other.get(c, pd.NA)
+        if solution.other is not None:
+            if save_other and other_list is None:
+                for c in solution.other.keys():
+                    df[c] = solution.other[c]
+            if other_list is not None:
+                for c in other_list:
+                    df[c] = solution.other.get(c, pd.NA)
         if addtnl_cols is not None:
             for k,v in addtnl_cols.items():
                 df[k]=v
@@ -71,14 +86,117 @@ def do_multiple_solves(prob:Problem, solver:Solver, num_runs:int, dir= ".", pref
         gc.collect()
 
 
+def study_cbree_observation_window(prob:Problem,
+                                   solver:CBREE,
+                                   num_runs:int,
+                                   dir= ".",
+                                   prefix="",
+                                   verbose=True,
+                                   observation_window_range=range(2,15),
+                                   reset_dict=None,
+                                   save_other=False,
+                                   other_list=None,
+                                   addtnl_cols= None):
+        """Call CBREE solver multiple times and save results.
+        
+       Cache the result of each run and redo the computation with different values for
+        `observation window`
 
+        Args:
+            prob (Problem): Instance of Problem class.
+            solver (Solver): Instance of Solver class.
+            num_runs (int): How many times `solver` will be called.
+            dir (str, optional): Where to save the results as a csv file. Defaults to ".".
+            prefix (str, optional): Prefix to csv file name. Defaults to "".
+            verbose (bool, optional): Whether to print some information during solving. Defaults to True.
+            observation_window_range (optional): Redo runs with  `observation window` values specified here. Defaults to range(2,15)
+            reset_dict (dict, optional): Reset the attributes of `solver` after each run according to this dict. Defaults to None.
+            save_other (bool, optional): Whether to save the entries from `other` (attribute of solution object) in the csv file. Defaults to False.
+            other_list (_type_, optional): Whether to save these entries from `other` (attribute of solution object) in the csv file.. Defaults to None.
+            addtnl_cols (dict, optional): Add columns with key names and fill with values from this dict. Defaults to None.
+        """
+        hash = hashlib.sha1()
+        hash.update(str(time.time()).encode('utf-8'))
+        file_name = path.join(dir, prefix+hash.hexdigest()[:5]+".csv")
+        
+        estimtates = zeros(num_runs)
+        
+        for i in range(num_runs):
+            solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": False, "save_history": True, "return_caches":True}, in_situ=False)
+            if reset_dict is not None:
+                solver = solver.set_options(reset_dict, in_situ=False)
+                
+            # solve
+            solution = solver.solve(prob)
+            cache_list = solution.other["cache_list"]
+            df = pd.DataFrame(index=[0])
+            df["Solver"] = solver.name
+            df["Problem"]=prob.name
+            df["Seed"]=i
+            df["Sample Size"] = prob.sample.shape[0]
+            df["Truth"]=prob.prob_fail_true
+            df["Estimate"] = solution.prob_fail_hist[-1]
+            df["Cost"]=solution.costs
+            df["Steps"]=solution.num_steps
+            df["Message"]=solution.msg
+            if save_other and other_list is None:
+                for c in solution.other.keys():
+                    df[c] = solution.other[c]
+            if other_list is not None:
+                for c in other_list:
+                    df[c] = solution.other.get(c, pd.NA)
+            if addtnl_cols is not None:
+                for k,v in addtnl_cols.items():
+                    df[k]=v
+            df["observation_window"]=0
+            df.to_csv(file_name, mode="a", header=not path.exists(file_name))
+            # Now solve with observation window
+            for win_len in observation_window_range:
+                # set up solver
+
+                solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": True, "observation_window":win_len}, in_situ=False)
+                if reset_dict is not None:
+                    solver = solver.set_options(reset_dict, in_situ=False)
+                    
+                # solve
+                solution = solver.solve_from_caches(deepcopy(cache_list))
+                df = pd.DataFrame(index=[0])
+                df["Solver"] = solver.name
+                df["Problem"]=prob.name
+                df["Seed"]=i
+                df["Sample Size"] = prob.sample.shape[0]
+                df["Truth"]=prob.prob_fail_true
+                df["Estimate"] = solution.prob_fail_hist[-1]
+                df["Cost"]=solution.costs
+                df["Steps"]=solution.num_steps
+                df["Message"]=solution.msg
+                if save_other and other_list is None:
+                    for c in solution.other.keys():
+                        df[c] = solution.other[c]
+                if other_list is not None:
+                    for c in other_list:
+                        df[c] = solution.other.get(c, pd.NA)
+                if addtnl_cols is not None:
+                    for k,v in addtnl_cols.items():
+                        df[k]=v
+                df["observation_window"]=win_len       
+                # save
+                df.to_csv(file_name, mode="a", header=not path.exists(file_name))
+                
+            # talk
+            if verbose:
+                estimtates[i]  = solution.prob_fail_hist[-1]
+                relRootMSE = sqrt(average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
+                print("Rel. Root MSE after " +  str(i+1) + "/" +str(num_runs) + " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
 
 
 def add_evaluations(df:pd.DataFrame, only_success=False, remove_outliers=False) -> pd.DataFrame:
-    """Add quantities of interest to dataframe.
+    """Add quantities of interest to df.
 
     Args:
-        df (pd.DataFrame): Dataframe with columns constants.DF_INITIAL_COLUMNS.
+        df (pd.DataFrame): Dataframe with one result per row.
+        only_success (bool, optional): Only use successful runs for aggregated evaluations. Defaults to False.
+        remove_outliers (bool, optional) Remove outliers for aggregated evaluations.  Defaults to False.
 
     Returns:
         df: [description] Dataframe with added columns
@@ -152,14 +270,16 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
         cols = ["Problem","Solver","Sample Size"]
     else:
         cols.extend(["Problem","Solver","Sample Size"])
-    df = df.groupby(by=cols)
-    path_by_multi_index = {
-        g: df.get_group(g).loc[:,"Path"].unique().item()
-        for g in df.groups.keys()
-    }
-    df = df.mean(numeric_only=True)
-    df["Path"] = nan
-    for k,v in path_by_multi_index.items():
-        df.loc[k,"Path"] = v
+    def my_mean(grp):
+        vals=[]
+        cols = [c for c in grp.columns if c not in ["Problem", "Solver", "Sample Size"]]
+        for c in cols:
+            if grp[c].dtype.str == '|O':
+                vals.append(grp[c].unique()[0])
+            else:
+                vals.append(grp[c].mean())
+        return pd.Series(vals, index=cols)
+    df_agg = df.groupby(cols).apply(my_mean)
+    df_agg.reset_index(inplace=True)
     return df
 
