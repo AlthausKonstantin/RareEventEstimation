@@ -2,24 +2,26 @@ import rareeventestimation as ree
 import numpy as np
 import argparse
 
-parser = argparse.ArgumentParser(description='Script so useful.')
-parser.add_argument("--dir", type=str, default="./")
-
+parser = argparse.ArgumentParser()
+parser.add_argument("--dir", type=str, default="/cbree_sim/toy_problems")
+parser.add_argument("--counter",
+                    type=int,
+                    default=0)
 args = parser.parse_args()
 
 
 # Set up solvers
 
 keywords = {
-    "tol" : [0.75],
-    "observation_window": [5],
-    "cvar_tgt":[2,5],
-    "sigma_inc_max": [2],
-}
+    "stepsize_tolerance" : [0.1, 0.5, 0.75, 1],
+    "mixture_model": ["GM", "vMFNM"],
+    "cvar_tgt":[0.5,1,2,3,5,7,10],
+    "lip_sigma": [1, 2,10],
+    "tgt_fun": ["algebraic","tanh","arctan","erf","relu","sigmoid"]}
 
 def cartesian_product(*arrays):
     la = len(arrays)
-    dtype = np.result_type(*arrays)
+    dtype = "object"
     arr = np.empty([len(a) for a in arrays] + [la], dtype=dtype)
     for i, a in enumerate(np.ix_(*arrays)):
         arr[...,i] = a
@@ -30,20 +32,20 @@ solver_list = []
 kwarg_list = []
 for col in prod:
     kwargs = dict(zip(keywords.keys(), col))
-    solver = ree.CBS(**kwargs)
-    solver.name = "CBS " + str(kwargs)
+    solver = ree.CBREE(**kwargs)
+    solver.name = "CBREE " + str(kwargs)
     solver_list.append(solver)
     kwarg_list.append(kwargs)
     
 
 # set up problems
-dims = range(5,105,5)
-problem_list = ree.problems_lowdim + ree.problems_highdim
+dims = [50]
+problem_list = ree.problems_lowdim + [ree.make_fujita_rackwitz(d) for d in dims] + [ree.make_linear_problem(d) for d in dims]
 
 # set up other parameters
 
-sample_sizes =[1000]
-num_runs = 10
+sample_sizes =[1000, 2000, 3000, 4000, 5000, 6000]
+num_runs = 200
 
 
 
@@ -52,21 +54,17 @@ def main():
     total = len(solver_list)*len(sample_sizes)*len(problem_list)
     counter = 1
     for problem in problem_list:
-        for s in sample_sizes:
-            for i, solver in enumerate(solver_list):
-                if counter > 0:
-                    if problem in ree.problems_highdim:
-                        solver = solver.set_options(dict(resample=True,
-                                                    mixture_model="vMFNM"),
-                                                    in_situ=False)
+        for i, solver in enumerate(solver_list):
+            for s in sample_sizes:
+                if counter > args.counter:
                     print(f"({counter}/{total}) {problem.name}, {s} Samples, with {solver.name}")
                     problem.set_sample(s, seed=s)
-                    ree.do_multiple_solves(problem,
+                    ree.study_cbree_observation_window(problem,
                                     solver,
                                     num_runs,
                                     dir=args.dir,
-                                    prefix=f"{problem.name} {s}".replace(" ", "_"),
-                                    save_other=True,
+                                    prefix=f"{problem.name} {counter} ".replace(" ", "_"),
+                                    save_other=False,
                                     addtnl_cols=kwarg_list[i])
                 counter += 1
 
