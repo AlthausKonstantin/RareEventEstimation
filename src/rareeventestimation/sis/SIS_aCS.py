@@ -43,12 +43,14 @@ Input:
            marginal distribution object of the input variables
 * burn   : burn-in period
 * tarCoV : target coefficient of variation of the weights
+*transform_lsf: bool, whether to transform g_fun into standard space 
 ---------------------------------------------------------------------------
 Output:
 * Pr       : probability of failure
 * l_tot    : total number of levels
 * samplesU : object with the samples in the standard normal space
 * samplesX : object with the samples in the original space
+* COV_Sl   : final coefficient of variation of weights
 ---------------------------------------------------------------------------
 Based on:
 1. "Sequential importance sampling for structural reliability analysis"
@@ -57,7 +59,7 @@ Based on:
 ---------------------------------------------------------------------------
 """
 
-def SIS_aCS(N, p, g_fun, distr, burn, tarCoV, seed=None, initial_sample=None):
+def SIS_aCS(N, p, g_fun, distr, burn, tarCoV, seed=None, initial_sample=None,verbose=False, transform_lsf=True):
     if seed is not None:
         random.seed(seed=seed)
     if (N*p != np.fix(N*p)) or (1/p != np.fix(1/p)):
@@ -77,7 +79,13 @@ def SIS_aCS(N, p, g_fun, distr, burn, tarCoV, seed=None, initial_sample=None):
         raise RuntimeError('Incorrect distribution. Please create an ERADist/Nataf object!')
         
     # LSF in standard space
-    g = lambda u: g_fun(np.array(u2x(u),ndmin=2))
+    if transform_lsf:
+        g = lambda u: g_fun(np.array(u2x(u),ndmin=2))
+    else:
+        g = lambda u: g_fun(np.array(u,ndmin=2))
+    
+
+    
 
     # Initialization of variables and storage
     max_it   = 100              # estimated number of iterations
@@ -226,7 +234,9 @@ def SIS_aCS(N, p, g_fun, distr, burn, tarCoV, seed=None, initial_sample=None):
         else:
             COV_Sl = np.std( (gk < 0)/sp.stats.norm.cdf(-gk/sigmak[m+1]))/ \
                      np.mean((gk < 0)/sp.stats.norm.cdf(-gk/sigmak[m+1]))
-                     
+        if verbose:            
+            print('\nCOV_Sl =', COV_Sl)
+            print('\t*aCS sigma =', sigmafk, '\t*aCS accrate =', accrate[m])
         if COV_Sl < tarCoV:
             break
 
@@ -245,4 +255,4 @@ def SIS_aCS(N, p, g_fun, distr, burn, tarCoV, seed=None, initial_sample=None):
     # transform the samples to the physical/original space
     samplesX = [u2x(samplesU[i][:,:]) for i in range(l_tot)]
 
-    return Pr, l_tot, samplesU, samplesX
+    return Pr, l_tot, samplesU, samplesX, COV_Sl

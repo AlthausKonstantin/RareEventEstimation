@@ -5,7 +5,7 @@ import plotly.express as px
 import re
 from plotly.graph_objects import Figure, Scatter,Bar, Contour, Layout
 from os import path
-from rareeventestimation.problem import Problem
+from rareeventestimation.problem.problem import Problem
 from rareeventestimation.solution import Solution
 from plotly.subplots import make_subplots
 from os.path  import commonpath
@@ -39,7 +39,7 @@ def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=F
             }
     solver_dashes = dict.fromkeys(solver_colors.keys())
     for solver in solver_dashes.keys():
-        if re.search("CBS", str(solver)):
+        if re.search("CBREE", str(solver)):
             solver_dashes[solver] = "solid"
         if re.search("EnKF", str(solver)):
             solver_dashes[solver] = "dash"
@@ -238,7 +238,7 @@ def get_continuous_color(colorscale, intermed):
     )
 
 
-def plot_cbs_other(sol:Solution, p2, plot_time=True):
+def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     f = make_subplots(rows=3, shared_xaxes=True)
     if plot_time:
         xx = cumsum(-log(sol.other["t_step"]))

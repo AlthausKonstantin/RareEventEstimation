@@ -41,6 +41,7 @@ Input:
 * k_init : initial number of Gaussians in the mixture model
 * burn   : burn-in period
 * tarCoV : target coefficient of variation of the weights
+*transform_lsf: bool, whether to transform g_fun into standard space 
 ---------------------------------------------------------------------------
 Output:
 * Pr       : probability of failure
@@ -48,6 +49,7 @@ Output:
 * samplesU : object with the samples in the standard normal space
 * samplesX : object with the samples in the original space
 * k_fin    : final number of Gaussians in the mixture
+* COV_Sl   : final coefficient of variation of weights
 ---------------------------------------------------------------------------
 Based on:
 1. "Sequential importance sampling for structural reliability analysis"
@@ -56,7 +58,7 @@ Based on:
 ---------------------------------------------------------------------------
 """
 
-def SIS_GM(N, p, g_fun, distr, k_init, burn, tarCoV, seed=None, initial_sample=None):
+def SIS_GM(N, p, g_fun, distr, k_init, burn, tarCoV, seed=None, initial_sample=None, verbose=False, transform_lsf=True):
     if seed is not None:
         random.seed(seed=seed)
     if (N*p != np.fix(N*p)) or (1/p != np.fix(1/p)):
@@ -76,7 +78,10 @@ def SIS_GM(N, p, g_fun, distr, k_init, burn, tarCoV, seed=None, initial_sample=N
         raise RuntimeError('Incorrect distribution. Please create an ERADist/Nataf object!')
         
     # LSF in standard space
-    g = lambda u: g_fun(np.array(u2x(u),ndmin=2))
+    if transform_lsf:
+        g = lambda u: g_fun(np.array(u2x(u),ndmin=2))
+    else:
+        g = lambda u: g_fun(np.array(u,ndmin=2))
 
     # Initialization of variables and storage
     max_it   = 100              # estimated number of iterations
@@ -169,7 +174,7 @@ def SIS_GM(N, p, g_fun, distr, k_init, burn, tarCoV, seed=None, initial_sample=N
                   pdfn = pdfn+ww[ii]*sp.stats.multivariate_normal.pdf(u0.T,mu[:,ii],si[:,:,ii])
                   pdfd = pdfd+ww[ii]*sp.stats.multivariate_normal.pdf(ucand.T,mu[:,ii],si[:,:,ii])
                     
-              alpha     = min(1,sp.stats.norm.cdf(-gcand/sigmak[m+1])*np.prod(sp.stats.norm.cdf(ucand))*pdfn/ \
+              alpha     = min(1,sp.stats.norm.cdf(-gcand/sigmak[m+1])*np.prod(sp.stats.norm.pdf(ucand))*pdfn/ \
                                 sp.stats.norm.cdf(-g0/sigmak[m+1])/np.prod(sp.stats.norm.pdf(u0))/pdfd)
               alphak[k] = alphak[k] + alpha/(lenchain+burn)
 
@@ -200,8 +205,9 @@ def SIS_GM(N, p, g_fun, distr, k_init, burn, tarCoV, seed=None, initial_sample=N
         else:
             COV_Sl = np.std( (gk < 0)/sp.stats.norm.cdf(-gk/sigmak[m+1]))/ \
                      np.mean((gk < 0)/sp.stats.norm.cdf(-gk/sigmak[m+1]))
-            
-
+        if verbose:    
+            print('\nCOV_Sl =', COV_Sl)
+            print('\t*MH-GM accrate =', accrate[m])
         if COV_Sl < tarCoV:
             break
 
@@ -224,4 +230,4 @@ def SIS_GM(N, p, g_fun, distr, k_init, burn, tarCoV, seed=None, initial_sample=N
     for i in range(l):
         samplesX.append( u2x(samplesU[i][:,:]) )
 
-    return Pr, l, samplesU, samplesX, k_fin
+    return Pr, l, samplesU, samplesX, k_fin, COV_Sl
