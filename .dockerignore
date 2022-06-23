@@ -1,0 +1,7 @@
+# Byte-compiled / optimized / DLL files
+*/*/__pycache__/
+*/*/*.py[cod]
+*/*/*$py.class
+src/rareeventestimation/Matlab/*
+docs/figures/*
+.pytest_cache/.
