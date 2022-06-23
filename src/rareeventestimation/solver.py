@@ -599,6 +599,7 @@ class CBREE(Solver):
         if self.sigma_adaptivity == "sfp":
             cache_list[-1].converged = (cache_list[-1].sfp >= self.sfp_tgt)  and self.convergence_check
             cache_list[1].msg += "Converged with given `sfp_tgt`."      
+    
     def __update_stepsize(self, cache_list:list) -> None:
         """Compute new stepsize, save it in `cache_list[-1].t_step`.
         
@@ -795,84 +796,126 @@ class CBREE(Solver):
         
         
 class ENKF(Solver):
-    """
-        Implementation of the ensemble Kalman filter for rare event estimation.
-        cf. Wagner2021.
-        Code is courtesy of Fabian Wagner.
-    """
+    """ Wrapper for code from Fabian Wagner."""
 
     def __init__(self, **kwargs) -> None:
-        """Make instance of ENKF and handle all keywords."""
+        """"Make instance of ENKF and handle all keywords.
+        
+        Optional Keyword Arguments:
+            cvar_tgt:  Stop if coefficient of variation is smaller than this, Defaults to 1.
+            mixture_model: Which model is used to for resampling. Defaults to "GM".
+                Can be one of:
+                    * "GM"
+                    * "vMFNM"
+            num_steps: Maximal number of steps. Defaults to 100.
+            num_comps: Number of components for multimodal problems. Defaults to 1.
+            localize: Whether to use local covariances.
+            seed: Seed for the random number generator. Defaults to None.
+        """
         super().__init__()
-        self.delta_target = kwargs.get("delta_target", 1.0)
-        self.is_distribution = kwargs.get("is_distribution", "GM")
-        assert self.is_distribution in ["GM", "vMFNM"], "Importance sampling distribution must be 'GM' or 'vMFNM'."
+        self.cvar_tgt = kwargs.get("cvar_tgt", 1.0)
+        self.mixture_model = kwargs.get("mixture_model", "GM")
+        assert self.mixture_model in ["GM", "vMFNM"], "Importance sampling distribution must be 'GM' or 'vMFNM'."
         self.num_steps = kwargs.get("num_steps", 100)
         self.num_comps = kwargs.get("num_comps", 1)
         self.localize = kwargs.get("localize", False)
-        self.temp = 1e6
         self.seed = kwargs.get("seed", None)
-        self.rng = default_rng(self.seed)
-
-        self.verbose = kwargs.get("verbose", False)
-        self.save_history = kwargs.get("save_history", False)
-        
-    
+ 
     def solve(self, prob:Problem):
-        enkf = EnKF_rare_events(lambda x: maximum(prob.lsf(x),0),
-                                zeros((1, 1)),
-                                self.num_steps,
-                                prob.sample.shape[0],
-                                prob.sample.shape[1],
-                                 self.delta_target,
-                                0,
-                                False,
-                                g_original=prob.lsf, 
-                                k_init=self.num_comps, 
-                                mixture_model=self.is_distribution)
-        enkf.uk = prob.sample
-        enkf.uk_initial = enkf.uk.copy()
-        enkf.uk_save.append(enkf.uk)
-        enkf.mean_k[0, :] = mean(enkf.uk, axis=0)
+        """Estimate the rare event of `prob`.
+
+        Args:
+            prob (Problem): Description of the rare event problem
+
+        Returns:
+            Solution: Estimate of probability of failure and other results from computation.
+        """
+        try:
+            enkf = EnKF_rare_events(lambda x: maximum(prob.lsf(x),0),
+                                    zeros((1, 1)),
+                                    self.num_steps,
+                                    prob.sample.shape[0],
+                                    prob.sample.shape[1],
+                                    self.cvar_tgt,
+                                    0,
+                                    False,
+                                    g_original=prob.lsf, 
+                                    k_init=self.num_comps, 
+                                    mixture_model=self.mixture_model)
+            enkf.uk = prob.sample
+            enkf.uk_initial = enkf.uk.copy()
+            enkf.uk_save.append(enkf.uk)
+            enkf.mean_k[0, :] = mean(enkf.uk, axis=0)
+                
+            seed(self.seed)
+            enkf.perform_iteration()
+            enkf.calculate_failure_probability()
+            return Solution(
+                array([enkf.uk_fitted]),
+                array(enkf.sigma_save),
+                array([enkf.gk]),
+                array([enkf.pf]),
+                enkf.number_fun_eval,
+                "Success",
+                num_steps=enkf.iter
+            )
+        except Exception as e:
+            Solution(zeros(0,0), 
+            array([nan]),
+            zeros((1, N))*nan,
+            array([nan]),
+            nan,
+            str(e))
             
-        seed(self.seed)
-        enkf.perform_iteration()
-        enkf.calculate_failure_probability()
-        
-        return Solution(
-            array([enkf.uk_fitted]),
-            array(enkf.sigma_save),
-            array([enkf.gk]),
-            array([enkf.pf]),
-            lambda x: nan,
-            enkf.number_fun_eval,
-            "Success",
-            num_steps=enkf.iter
-        )
         
         
 class SIS(Solver):
-    """Wrapper for SIS code from Engineering Risk Analysis Group."""
+    """Wrapper for SIS code from Engineering Risk Analysis Group, TU Munich."""
 
     def __init__(self, **kwargs) -> None:
-        """Handle all possible keywords specifying solver options."""
+        """Handle all possible keywords specifying solver options.
+        
+        Optional Keyword Arguments:
+            num_chains_wrt_sample Use `num_chains_wrt_sample`*sample size number of chains for the MCMC routine.
+            burn_in: burn-in period for MCMC routine.
+            cvar_tgt (Real, optional): Stop if coefficient of variation is smaller than this
+            mixture_model (str, optional): Which method is used to for resampling. Defaults to "GM".
+                Can be one of:
+                    * "GM"
+                    * "aCS"
+            num_comps: Number of components for multimodal problems. Defaults to 1.
+            seed (int, optional): Seed for the random number generator. Defaults to None.
+            fixed_initial_sample (bool): Whether to us the initial sample provided by `prob` ins `solve`.
+                Defaults to True.
+            verbose (bool, optional): Whether to print information during solving. Defaults to False.
+            return_other (bool, optional): Whether to return the final number of components
+                and coefficient of variation of the weights.
+        """
         super().__init__()
         self.num_chains_wrt_sample = kwargs.get("num_chains_wrt_sample", 0.1)
         self.burn_in = kwargs.get("burn_in", 0)
-        self.target_cvar = kwargs.get("target_cvar", 1.0)
-        self.sampling_mode = kwargs.get("sampling_mode", "GM")
-        assert self.sampling_mode in ["GM", "aCS"], "Sampling mode must be either 'GM' or 'aCS'"
+        self.cvar_tgt = kwargs.get("cvar_tgt", 1.0)
+        self.mixture_model = kwargs.get("mixture_model", "GM")
+        assert self.mixture_model in ["GM", "aCS"], "mixture_model must be either 'GM' or 'aCS'"
         self.num_comps = kwargs.get("num_comps", 1)
         self.seed = kwargs.get("seed", None)
         self.fixed_initial_sample = kwargs.get("fixed_initial_sample", True)
         self.verbose = kwargs.get("verbose", False)
         self.return_other = kwargs.get("return_other", False)
+    
     def __str__(self) -> str:
         """Return abbreviated name of method."""
-        return f"SiS ({self.sampling_mode})"
+        return f"SiS ({self.mixture_model})"
 
     def solve(self, prob: Problem):
-        """Do sequential importance sampling."""
+        """Estimate the rare event of `prob`.
+
+        Args:
+            prob (Problem): Description of the rare event problem
+
+        Returns:
+            Solution: Estimate of probability of failure and other results from computation.
+        """
         # Check and set up input for SIS subroutine
         assert isinstance(
             prob.eranataf_dist, ERANataf), "For sequential importance sampling, prob needs to have an ERANataf distribution."
@@ -886,14 +929,14 @@ class SIS(Solver):
             initial_sample = None
         # Solve
         try:
-            if self.sampling_mode == "aCS":
+            if self.mixture_model == "aCS":
                 Pr, l_tot, samplesU, samplesX, COV_Sl= SIS_aCS(
                     N,
                     p,
                     my_lsf,
                     prob.eranataf_dist,
                     self.burn_in,
-                    self.target_cvar,
+                    self.cvar_tgt,
                     seed=self.seed,
                     initial_sample=initial_sample, 
                     transform_lsf= not isinstance(prob, NormalProblem),
@@ -907,18 +950,16 @@ class SIS(Solver):
                     prob.eranataf_dist,
                     self.num_comps,
                     self.burn_in,
-                    self.target_cvar,
+                    self.cvar_tgt,
                     seed=self.seed,
                     initial_sample=initial_sample, 
                     transform_lsf= not isinstance(prob, NormalProblem),
                     verbose=self.verbose)
         except Exception as e:
-            print(str(e))
             Solution(zeros(0,0), 
             array([nan]),
             zeros((1, N))*nan,
             array([nan]),
-            lambda x: nan,
             my_lsf.num_evals,
             str(e))
 
@@ -935,7 +976,6 @@ class SIS(Solver):
             array([nan]),
             zeros((1, N))*nan,
             array([Pr]),
-            lambda x: nan,
             my_lsf.num_evals,
             "Success",
             num_steps = l_tot,
