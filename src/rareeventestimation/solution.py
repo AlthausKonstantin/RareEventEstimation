@@ -1,21 +1,22 @@
-
+"""Class for results of Solver class."""
 from typing import Callable
 from numpy import arange, array, ndarray, zeros, nan, zeros_like,maximum, minimum
-from rareeventestimation.problem import Problem
+from rareeventestimation.problem.problem import Problem
 
 
 class Solution:
     """Organize the history of the method `Solver.solve()`."""
 
-    def __init__(self, ensemble_hist: ndarray, temp_hist: ndarray, lsf_eval_hist: ndarray, prob_fail_hist: ndarray, tgt_fun: Callable, costs: int, msg: str, num_steps=None, other=None):
+    def __init__(self, ensemble_hist: ndarray, temp_hist: ndarray, lsf_eval_hist: ndarray, prob_fail_hist: ndarray, costs: int, msg: str, num_steps=None, other=None) -> None:
         """Construct instance of Solution.
 
+        J is the number of samples.
+        d is the number of dimensions.
         Args:
-            ensemble_hist (ndarray): 3-D array of shape (num_steps, N, D).
+            ensemble_hist (ndarray): 3-D array of shape (num_steps, J, d).
             temp_hist (ndarray): 1-D array of shape (num_steps)
-            lsf_eval_hist (ndarray): 2-D array of shape (num_steps, N)
+            lsf_eval_hist (ndarray): 2-D array of shape (num_steps, J)
             prob_fail_hist (ndarray): 1-D array of shape (num_steps)
-            tgt_fun (Callable): Function used for reweighting samples.
             costs (int): Measure of computational costs for obtaining solution.
             msg (str): Exit message. Either 'Success' or the measssage of a caught exception
         """
@@ -23,7 +24,6 @@ class Solution:
         self.temp_hist = temp_hist
         self.lsf_eval_hist = lsf_eval_hist
         self.prob_fail_hist = prob_fail_hist
-        self.tgt_fun = tgt_fun
         self.costs = costs
         self.msg = msg
         (num_steps_shape, N, d) = ensemble_hist.shape
@@ -38,7 +38,7 @@ class Solution:
 
 
 
-    def __compute_rel_error(self, prob: Problem):
+    def __compute_rel_error(self, prob: Problem)->None:
         """
         Compute and save relative error of estimated probability of failure.
 
@@ -53,8 +53,15 @@ class Solution:
             self.prob_fail_hist - prob.prob_fail_true) / prob.prob_fail_true
     
 
-    def get_rel_err(self, prob=None):
+    def get_rel_err(self, prob=None)->float:
+        """Return relative error, if `prob` has the attribute `prob_fail_true`.
+
+        Args:
+            prob (Problem, optional):  Instance of Problem class.. Defaults to None.
+
+        Returns:
+            float: Relative error between estimates and truth.
+        """
         assert prob is not None, "Need problem to compute rel. error. Please provide the problem!"
         self.__compute_rel_error(prob)
         return self.prob_fail_r_err
-
