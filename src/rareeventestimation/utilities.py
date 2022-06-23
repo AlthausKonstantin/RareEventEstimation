@@ -1,4 +1,4 @@
-    
+"""Custom functions of existing functions used in package."""
 import os
 from numpy import average, exp, log, ndarray, pi, zeros, eye, isfinite,  amax, sqrt, inf, ones_like, isnan, argmax, zeros_like, diff, nan, trace, amin, arange, polyfit, seterr
 from numpy.linalg import norm
@@ -25,8 +25,6 @@ def importance_sampling(target_pdf_evals: ndarray, aux_pdf_evals: ndarray, lsf_e
         return average(w*(lsf_evals <= 0))
 
 
-
-
 def radial_gaussian_logpdf(sample:ndarray) -> ndarray:
         """Taken from CEIS-VMFNM, likelihood_ratio_log."""
         dim = sample.shape[-1]
@@ -42,6 +40,7 @@ def radial_gaussian_logpdf(sample:ndarray) -> ndarray:
         rad_gauss_log = gaussian_logpdf(sample) + log(norm(sample, axis=1, ord=2))
         print(norm(rad_gauss_log -f_u - f_chi))
         return f_u + f_chi
+
     
 def gaussian_logpdf(sample:ndarray) -> ndarray:
     """Evaluate logpdf of multivariate standard normal distribuution in sample."""
@@ -49,7 +48,17 @@ def gaussian_logpdf(sample:ndarray) -> ndarray:
     return multivariate_normal.logpdf(sample, mean=zeros(d), cov=eye(d))
 
     
-def my_log_cvar(log_samples, multiplier=None):
+def my_log_cvar(log_samples:ndarray, multiplier=None)->float:
+    """Compute coefficient of variation of `exp(log_samples)* multiplier`.
+
+    Args:
+        log_samples (ndarray): Samples in array of shape (J,)
+        multiplier (ndarray, optional): See above. Defaults to None. Then we use
+            an array of ones.
+
+    Returns:
+        float: coefficient of variation of `exp(log_samples)* multiplier`.
+    """
     msk = isfinite(log_samples)
     log_samples = log_samples[msk]
     if multiplier is None:
@@ -68,7 +77,15 @@ def my_log_cvar(log_samples, multiplier=None):
         return out
 
     
-def my_softmax(weights):
+def my_softmax(weights:ndarray)->ndarray:
+    """Custom softmax function to deal with degenerate weights.
+
+    Args:
+        weights (ndarray): log weights in array of shape (J,)
+
+    Returns:
+        ndarray: Normalized weights in array of shape (J,)
+    """
     old = seterr(under="ignore") # temporarily ignore underflow (will be cast to 0)
     # Ignore nonfinite values
     weights = weights.squeeze()
@@ -98,7 +115,15 @@ def my_softmax(weights):
     return w_out
 
 
-def get_slope(y):
+def get_slope(y:ndarray)->float:
+    """Compute slope of points (i, y[i]).
+
+    Args:
+        y (ndarray): y-values of data to fit.
+
+    Returns:
+        float: Slope of linear fitting.
+    """
     x= arange(len(y))
     msk = isfinite(y)
     if not all(msk):
@@ -108,21 +133,8 @@ def get_slope(y):
         slope = polyfit(x[msk],y[msk],deg=1, full=True)[0][0]
     except Exception:
         return nan
-    
     return slope
             
-        
-def compute_delta_normalized(means, covs, alpha):
-    d = means.shape[1]
-    expected_diff_means = average(sum(diff(means, axis=0)**2,axis=1),axis=0)
-    expected_trace = average(trace(covs,axis1=1,axis2=2))
-    normed_delta_mean = expected_diff_means/(d*(1-alpha**2) + (1-alpha**2)*expected_trace)
-    
-    expected_diff_covs = average(sum(diff(covs, axis=0)**2, axis=(1,2)),axis=0)
-    expected_cov_norm = average(sum(covs**2,axis=(1,2)),axis=0)
-    expected_diag_norm = average(trace(covs**2, axis1=1, axis2=2),axis=0)
-    normed_cov_mean = expected_diff_covs / (d**2 + expected_cov_norm + expected_diag_norm)
-    normed_cov_mean /= 1-alpha**2
-    return (normed_delta_mean + normed_cov_mean)/2
+
     
       
