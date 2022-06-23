@@ -287,8 +287,7 @@ class EnKF_rare_events:
 
     def evaluate_lsf(self):
         """Calculate the limit state function values with respect to the current particles"""
-        for k in range(self.ensemble_size):
-            self.gk[k, :] = self.lsf(self.uk[k, :])
+        self.gk = self.lsf(self.uk)[..., None]
 
         'Update the computational costs and number of function evaluations'
         self.computational_cost = self.computational_cost + self.ensemble_size
