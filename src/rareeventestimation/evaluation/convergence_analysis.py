@@ -1,6 +1,7 @@
 """Functions to do an empirical analysis of convergence behavior."""
 
 from copy import deepcopy
+from logging import warning
 import tempfile
 from numpy import average, sqrt, zeros, var, nan
 from scipy.stats import variation
@@ -143,48 +144,9 @@ def study_cbree_observation_window(prob:Problem,
             solver = solver.set_options(reset_dict, in_situ=False)
             
         # solve
-        solution = solver.solve(prob)
-        cache_list = solution.other["cache_list"]
-        df = pd.DataFrame(index=[0])
-        df["Solver"] = solver.name
-        df["Problem"]=prob.name
-        df["Seed"]=i
-        df["Sample Size"] = prob.sample.shape[0]
-        df["Truth"]=prob.prob_fail_true
-        df["Estimate"] = solution.prob_fail_hist[-1]
-        df["Cost"]=solution.costs
-        df["Steps"]=solution.num_steps
-        df["Message"]=solution.msg
-        if save_other and other_list is None:
-            for c in solution.other.keys():
-                df[c] = solution.other[c]
-        if other_list is not None:
-            for c in other_list:
-                df[c] = solution.other.get(c, pd.NA)
-        if addtnl_cols is not None:
-            for k,v in addtnl_cols.items():
-                df[k]=v
-        df["observation_window"]=0
-        df.to_csv(file_name, mode="a", header=not path.exists(file_name))
-        # Now solve with observation window
-        for win_len in observation_window_range:
-            # set up solver
-
-            solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": True, "observation_window":win_len}, in_situ=False)
-            if reset_dict is not None:
-                solver = solver.set_options(reset_dict, in_situ=False)
-                
-            # solve
-            try: 
-                solution = solver.solve_from_caches(deepcopy(cache_list))
-            except Exception as e:
-                # set up emtpy solution
-                solution = Solution(prob.sample[None,...],
-                                    nan * zeros(1),
-                                    nan * zeros(prob.sample.shape[0]),
-                                    zeros(1),
-                                    0,
-                                    str(e))
+        try:
+            solution = solver.solve(prob)
+            cache_list = solution.other["cache_list"]
             df = pd.DataFrame(index=[0])
             df["Solver"] = solver.name
             df["Problem"]=prob.name
@@ -204,17 +166,59 @@ def study_cbree_observation_window(prob:Problem,
             if addtnl_cols is not None:
                 for k,v in addtnl_cols.items():
                     df[k]=v
-            df["observation_window"]=win_len       
-            # save
-            df.to_csv(file_name, mode="a", header=write_header)
-            write_header=False
-            
-        # talk
-        if verbose:
-            estimtates[i]  = solution.prob_fail_hist[-1]
-            relRootMSE = sqrt(average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
-            print("Rel. Root MSE after " +  str(i+1) + "/" +str(num_runs) + " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
-            
+            df["observation_window"]=0
+            df.to_csv(file_name, mode="a", header=not path.exists(file_name))
+            # Now solve with observation window
+            for win_len in observation_window_range:
+                # set up solver
+
+                solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": True, "observation_window":win_len}, in_situ=False)
+                if reset_dict is not None:
+                    solver = solver.set_options(reset_dict, in_situ=False)
+                    
+                # solve
+                try: 
+                    solution = solver.solve_from_caches(deepcopy(cache_list))
+                except Exception as e:
+                    # set up emtpy solution
+                    solution = Solution(prob.sample[None,...],
+                                        nan * zeros(1),
+                                        nan * zeros(prob.sample.shape[0]),
+                                        zeros(1),
+                                        0,
+                                        str(e))
+                df = pd.DataFrame(index=[0])
+                df["Solver"] = solver.name
+                df["Problem"]=prob.name
+                df["Seed"]=i
+                df["Sample Size"] = prob.sample.shape[0]
+                df["Truth"]=prob.prob_fail_true
+                df["Estimate"] = solution.prob_fail_hist[-1]
+                df["Cost"]=solution.costs
+                df["Steps"]=solution.num_steps
+                df["Message"]=solution.msg
+                if save_other and other_list is None:
+                    for c in solution.other.keys():
+                        df[c] = solution.other[c]
+                if other_list is not None:
+                    for c in other_list:
+                        df[c] = solution.other.get(c, pd.NA)
+                if addtnl_cols is not None:
+                    for k,v in addtnl_cols.items():
+                        df[k]=v
+                df["observation_window"]=win_len       
+                # save
+                df.to_csv(file_name, mode="a", header=write_header)
+                write_header=False
+                
+            # talk
+            if verbose:
+                estimtates[i]  = solution.prob_fail_hist[-1]
+                relRootMSE = sqrt(average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
+                print("Rel. Root MSE after " +  str(i+1) + "/" +str(num_runs) + " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
+        except Exception as a:
+            warning(print(str(e)))
+         
     return file_name
     
 
