@@ -254,12 +254,9 @@ def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     # Plot parameters
     f.add_trace(Scatter(x=xx, y=sol.other["sigma"], name="Sigma"), row=2, col=1)
     f.add_trace(Scatter(x=xx, y=sol.other["beta"], name="Beta"), row=2, col=1)
-    f.add_trace(Scatter(x=xx, y=sol.other["t_step"], name="Stepsize"), row=2, col=1)
+    f.add_trace(Scatter(x=xx, y=-log(sol.other["t_step"]), name="Stepsize"), row=2, col=1)
     f.add_trace(Scatter(x=xx, y=sol.other["ess"]/p2.sample.shape[0], name="rel.ESS"), row=2, col=1)
     # Plot monitored quants
-
-    f.add_trace(Scatter(x=xx, y=sol.other["delta"], name= "Distance"),  row=3, col=1)
-    f.add_trace(Scatter(x=xx, y=sol.other["delta_slope"], name= "Distance Slope", line_color = cmap[(len(f.data)-1) % len(cmap)], line_dash="dash"),  row=3, col=1)
 
     f.add_trace(Scatter(x=xx, y=sum(sol.lsf_eval_hist <= 0,axis=1)/p2.sample.shape[0], name= "SFP"),  row=3, col=1)
     f.add_trace(Scatter(x=xx, y=sol.other["sfp_slope"], name= "SFP Slope", line_color = cmap[(len(f.data)-1) % len(cmap)], line_dash="dash"),  row=3, col=1)

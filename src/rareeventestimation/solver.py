@@ -7,8 +7,8 @@ from numbers import Real
 from sys import float_info
 from tabnanny import verbose
 from typing import Optional
-
-from numpy import (amax, arange, arctan, array, average, concatenate, cov, diff, exp,
+from warnings import warn
+from numpy import (amax, arange, arctan, array, average, concatenate, cov, diff, exp, insert,
                    invert, isfinite, isnan, log, log1p, maximum, minimum, nan,
                    ndarray, pi, prod, sqrt, tanh, tril, where, sum, zeros, mean, asarray)
 from numpy.linalg import norm, inv
@@ -365,6 +365,8 @@ class CBREE(Solver):
                 cache_list.append(new_cache)
             except Exception as e:
                 msg = str(e)
+                if not self.verbose:
+                    warn(str(e))
             # maybe prune list
             if not self.save_history and len(cache_list) > self.observation_window:
                 cache_list.pop(0)
@@ -402,6 +404,10 @@ class CBREE(Solver):
         other["CVAR"] = cache_list[-1].cvar_is_weights
         other["SFP"] = cache_list[-1].sfp
         tmp = flatten_cache_list(cache_list)
+        # correct sigma beta and t_step to match thesis notation
+        tmp["sigma"] = insert(tmp["sigma"],0,0)
+        tmp["beta"] = insert(tmp["beta"],0,nan)
+        tmp["t_step"] = insert(tmp["t_step"],0,nan)
         
         if self.return_other:
             other = other|tmp
@@ -455,10 +461,10 @@ class CBREE(Solver):
                     return (my_log_cvar(log_approx_evals) -self.cvar_tgt)**2
                 
                 # Minimize objective function
-                opt_sol = minimize_scalar(obj_fun, bounds=[cache.sigma, cache.sigma+self.lip_sigma*log(1/self.cache)], method="Bounded")
+                opt_sol = minimize_scalar(obj_fun, bounds=[cache.sigma, cache.sigma+self.lip_sigma*log(1/cache.t_step)], method="Bounded")
                 cache.sigma = opt_sol.x
-        except Exception:
-            msg = "Failed to update sigma."
+        except Exception as e:
+            msg = f"Failed to update sigma: {str(e)}" 
             if self.verbose:
                 cache.msg += msg
             else:
@@ -500,8 +506,8 @@ class CBREE(Solver):
             else:
                 new_beta = sol.x.item()
             cache.beta = new_beta
-        except Exception:
-            msg = "Failed to update beta."
+        except Exception as e:
+            msg = f"Failed to update beta: {str(e)}"
             if self.verbose:
                 cache.msg += msg
             else:
@@ -778,6 +784,10 @@ class CBREE(Solver):
         other["CVAR"] = cache_list_new[-1].cvar_is_weights
         other["SFP"] = cache_list_new[-1].sfp
         tmp = flatten_cache_list(cache_list_new)
+        # correct sigma beta and t_step to match thesis notation
+        tmp["sigma"] = insert(tmp["sigma"],0,0)
+        tmp["beta"] = insert(tmp["beta"],0,nan)
+        tmp["t_step"] = insert(tmp["t_step"],0,nan)
         
         if self.return_other:
             other = other|tmp
@@ -860,6 +870,7 @@ class ENKF(Solver):
                 num_steps=enkf.iter
             )
         except Exception as e:
+            warn(str(e))
             Solution(zeros(0,0), 
             array([nan]),
             zeros((1, N))*nan,
@@ -956,6 +967,7 @@ class SIS(Solver):
                     transform_lsf= not isinstance(prob, NormalProblem),
                     verbose=self.verbose)
         except Exception as e:
+            warn(str(e))
             Solution(zeros(0,0), 
             array([nan]),
             zeros((1, N))*nan,
