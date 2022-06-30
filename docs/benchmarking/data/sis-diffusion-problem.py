@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dir", type=str, default="/sis_sim_diffusion/")
+parser.add_argument("--dir", type=str, default="docs/benchmarking/data/sis_sim_diffusion")
 
 args = parser.parse_args()
 
@@ -12,7 +12,7 @@ args = parser.parse_args()
 
 keywords = {
     "mixture_model": ["GM", "aCS"],
-    "cvar_tgt":[1,2,3,5,7,10],
+    "cvar_tgt":[1],
 }
 def cartesian_product(*arrays):
     la = len(arrays)
@@ -28,7 +28,7 @@ kwarg_list = []
 for col in prod:
     kwargs = dict(zip(keywords.keys(), col))
     solver = ree.SIS(**kwargs)
-    solver.name = "EnKF " + str(kwargs)
+    solver.name = "SiS " + str(kwargs)
     solver_list.append(solver)
     kwarg_list.append(kwargs)
     
@@ -53,7 +53,7 @@ def main():
                 if counter > 0:
                     print(f"({counter}/{total}) {problem.name}, {s} Samples, with {solver.name}")
                     problem.set_sample(s, seed=s)
-                    ree.study_cbree_observation_window(problem,
+                    ree.do_multiple_solves(problem,
                                     solver,
                                     num_runs,
                                     dir=args.dir,
