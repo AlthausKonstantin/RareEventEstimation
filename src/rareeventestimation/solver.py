@@ -367,10 +367,12 @@ class CBREE(Solver):
             try:
                 new_cache = self.__perfrom_step(cache_list[-1])
                 cache_list.append(new_cache)
+                assert 0> 1
             except Exception as e:
                 msg = str(e)
                 if not self.verbose:
                     warn(str(e))
+                break
             # maybe prune list
             if not self.save_history and len(cache_list) > self.observation_window:
                 cache_list.pop(0)
@@ -384,6 +386,7 @@ class CBREE(Solver):
                     msg = str(e)
                     if not self.verbose:
                         warn(str(e))
+                    break
             # maybe print info about this iteration
             if self.verbose:
                 table.add_row([cache_list[-1].iteration, 
