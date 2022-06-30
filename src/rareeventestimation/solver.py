@@ -367,7 +367,6 @@ class CBREE(Solver):
             try:
                 new_cache = self.__perfrom_step(cache_list[-1])
                 cache_list.append(new_cache)
-                assert 0> 1
             except Exception as e:
                 msg = str(e)
                 if not self.verbose:
