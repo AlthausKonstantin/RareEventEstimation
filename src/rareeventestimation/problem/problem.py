@@ -111,8 +111,8 @@ class Vectorizer:
         """
         if isinstance(lsf, Vectorizer):
             self.d = lsf.d
-            self.lsf_1d = lsf.lsf
-            self.lsf_2d = lsd.lsf_2d
+            self.lsf_1d = lsf.lsf_1d
+            self.lsf_2d = lsf.lsf_2d
             self.lsf_msh = lsf.lsf_msh
             self.num_evals = 0
         else:
