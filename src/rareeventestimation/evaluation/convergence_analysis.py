@@ -1,13 +1,17 @@
 """Functions to do an empirical analysis of convergence behavior."""
 
+from ast import literal_eval
 from copy import deepcopy
+from glob import glob
 from logging import warning
+from numbers import Real
 import tempfile
-from numpy import average, sqrt, zeros, var, nan
+from numpy import asarray, average, concatenate, float64, ndarray, sqrt, zeros, var, nan, stack
+from scipy.fftpack import cc_diff
 from scipy.stats import variation
 from rareeventestimation.solution import Solution
 from rareeventestimation.problem.problem import Problem
-from rareeventestimation.solver import CBREE, Solver
+from rareeventestimation.solver import CBREE, Solver, CBREECache
 from numpy.random import default_rng
 import pandas as pd
 from os import path
@@ -67,7 +71,7 @@ def do_multiple_solves(prob:Problem,
                                 str(e))
             
         df = pd.DataFrame(index=[0])
-        df["Solver"] = solver.name
+        df["Solver"] = str(solver)
         df["Problem"]=prob.name
         df["Seed"]=i
         df["Sample Size"] = prob.sample.shape[0]
@@ -79,16 +83,17 @@ def do_multiple_solves(prob:Problem,
         if solution.other is not None:
             if save_other and other_list is None:
                 for c in solution.other.keys():
-                    df[c] = solution.other[c]
+                    df[c] = [solution.other[c].tolist()]
             if other_list is not None:
                 for c in other_list:
-                    df[c] = solution.other.get(c, pd.NA)
+                    df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
+                    df[c] = df[c].map(list)
         if addtnl_cols is not None:
             for k,v in addtnl_cols.items():
                 df[k]=v
                 
         # save
-        df.to_csv(file_name, mode="a", header=write_header)
+        df.to_csv(file_name, mode="a", header=write_header, index=False)
         write_header=False
         
         
@@ -159,10 +164,10 @@ def study_cbree_observation_window(prob:Problem,
             df["Message"]=solution.msg
             if save_other and other_list is None:
                 for c in solution.other.keys():
-                    df[c] = solution.other[c]
+                    df[c] = [solution.other[c]]
             if other_list is not None:
                 for c in other_list:
-                    df[c] = solution.other.get(c, pd.NA)
+                    df[c] = [solution.other.get(c, pd.NA)]
             if addtnl_cols is not None:
                 for k,v in addtnl_cols.items():
                     df[k]=v
@@ -217,10 +222,36 @@ def study_cbree_observation_window(prob:Problem,
                 relRootMSE = sqrt(average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
                 print("Rel. Root MSE after " +  str(i+1) + "/" +str(num_runs) + " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
         except Exception as a:
-            warning(print(str(e)))
+            pass
          
     return file_name
+   
+
+def load_data(pth:str, pattern:str ,recursive=True, kwargs={}) -> pd.DataFrame:
+    """Load files from `do_multiple_solves` and return them as a DataFrame.
     
+    Also works for files created by `study_cbree_observation_window`.
+    Assume that solution files are of the csv format.
+
+    Args:
+        pth (str): Where to look for the solutions.
+        pattern (str): Shell style pattern for the filenames that are considered (excluding extension '.csv')
+        recursive (bool, optional): Also look into subdirectories of `dir`. Defaults to True.
+        kwargs(dict, optional). Options for pd.read_csv
+    Returns:
+        pd.DataFrame: All solution files in `dir`.
+    """
+    files = glob(path.join(pth, pattern+".csv"), recursive=recursive)
+    df = pd.concat([pd.read_csv(f, **kwargs) for f in files],ignore_index=True)
+    df.drop_duplicates(inplace=True)
+    df.reset_index(inplace=True)
+    c = CBREECache(zeros(0),  zeros(0),  zeros(0))
+    cache_attributes = [a for a in dir(c) if a[0] != "_"]
+    my_eval = lambda cell: asarray(literal_eval(cell.replace("nan", "None")))
+    for c in df.columns:
+        if c in cache_attributes and isinstance(df[c][0], str) :
+            df[c] = df[c].apply(my_eval)
+    return df
 
 
 def add_evaluations(df:pd.DataFrame, only_success=False, remove_outliers=False) -> pd.DataFrame:
@@ -305,14 +336,25 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
         cols.extend(["Problem","Solver","Sample Size"])
     def my_mean(grp):
         vals=[]
-        cols = [c for c in grp.columns if c not in ["Problem", "Solver", "Sample Size"]]
-        for c in cols:
-            if grp[c].dtype.str == '|O':
-                vals.append(grp[c].unique()[0])
+        cc = [c for c in grp.columns if c not in ["Problem", "Solver", "Sample Size"]]
+        for c in cc:
+            if len(grp[c]) == 0:
+                vals.append(None)
             else:
-                vals.append(grp[c].mean())
-        return pd.Series(vals, index=cols)
+                if isinstance(grp[c].values[0], ndarray):
+                    arr = stack(grp[c].values)
+                    vals.append(average(arr.astype(float64), axis=0))
+                elif isinstance(grp[c].values[0], Real):
+                    vals.append(grp[c].mean())
+                else:
+                     vals.append(grp[c].unique()[0])
+        # for c in cols:
+        #     if grp[c].dtype.str == '|O':
+        #         vals.append(grp[c].unique()[0])
+        #     else:
+        #         vals.append(grp[c].mean())
+        return pd.Series(vals, index=cc)
     df_agg = df.groupby(cols).apply(my_mean)
     df_agg.reset_index(inplace=True)
-    return df
+    return df_agg
 

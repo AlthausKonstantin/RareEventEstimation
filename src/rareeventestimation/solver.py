@@ -64,7 +64,7 @@ class CBREECache:
         msg (str): Message for this step
     """
     
-    ensemble: ndarray
+    ensemble: ndarray 
     lsf_evals: ndarray
     e_fun_evals: ndarray
     weighted_mean: ndarray = None
@@ -166,7 +166,8 @@ class CBREE(Solver):
                  save_history=False,
                  return_other=False,
                  return_caches=False,
-                 name=None
+                 name=None,
+                 callback=None
                  ) -> None:
         """Handle all possible keywords specifying solver options.
 
@@ -220,6 +221,8 @@ class CBREE(Solver):
             return_other (bool, optional): Whether to add the flattened caches to attribute `other` of the solution. Defaults to False.
             return_caches (bool, optional): Whether to return a list of the caches. Defaults to False.
             name (str, optional): Name of the solver. Defaults to "CBREE".
+            name (Callable, optional): Apply this function to the current CBREECache after each iteration.
+            Defaults to None.
         """
         super().__init__()
         if stepsize_adaptivity is True:
@@ -268,6 +271,7 @@ class CBREE(Solver):
         self.return_other = return_other
         self.return_caches = return_caches
         self.name = name
+        self.callback = callback
 
     def __str__(self) -> str:
         """Return given name of method."""
@@ -373,7 +377,13 @@ class CBREE(Solver):
             
             # check for convergence
             self.__convergence_check(cache_list)
-            
+            if self.callback is not None:
+                try:
+                    cache_list[-1] = self.callback(cache_list[-1], self)
+                except Exception as e:
+                    msg = str(e)
+                    if not self.verbose:
+                        warn(str(e))
             # maybe print info about this iteration
             if self.verbose:
                 table.add_row([cache_list[-1].iteration, 

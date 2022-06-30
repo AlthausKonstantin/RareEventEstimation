@@ -14,28 +14,28 @@ from PIL import ImageColor
 cmap = px.colors.qualitative.Plotly
 
 
-def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=False, one_plot=False, MSE=True) -> list:
+def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=False, one_plot=False, MSE=True, cmap=cmap, layout={}) -> list:
     """Plot rel. root MSE of estimates vs mean of costs.
 
     Args:
-        df (pd.DataFrame): Dataframe, assumed to come from  add_evaluations.
+        df (pd.DataFrame): Dataframe, assumed to come from  add_evaluations and aggregate_df.
         save_to_resp_path (bool, optional): Save plots to resp. path specified in column "Path". Defaults to True.
 
     Returns:
         list: List with Figures
     """
     out = []
-    df_agg = aggregate_df(df)
+    df =  df.set_index(["Problem","Solver","Sample Size"])
 
     # Set up dicts with (solver,color) and (solver,line-style) entries
     solver_colors = {
         s: cmap[i%len(cmap)] 
-        for (i, s) in enumerate(df_agg.index.get_level_values(1).unique())
+        for (i, s) in enumerate(df.index.get_level_values(1).unique())
         }
     if one_plot:
         solver_colors = {
             s: cmap[i%len(cmap)] 
-            for (i, s) in enumerate(df_agg.index.droplevel(2).unique())
+            for (i, s) in enumerate(df.index.droplevel(2).unique())
             }
     solver_dashes = dict.fromkeys(solver_colors.keys())
     for solver in solver_dashes.keys():
@@ -48,14 +48,14 @@ def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=F
     # Make a plot for each problem 
     if one_plot:
         one_fig = Figure()  
-    problems_in_df = df_agg.index.get_level_values(0).unique()
+    problems_in_df = df.index.get_level_values(0).unique()
     for problem in problems_in_df:
         fig = Figure()
-        applied_solvers = df_agg.loc[problem,:].index.get_level_values(0).unique()
+        applied_solvers = df.loc[problem,:].index.get_level_values(0).unique()
         # Add traces for each solver
         for solver in applied_solvers:
-            xvals = df_agg.loc[(problem, solver),"Relative Root MSE"].values if MSE else df_agg.loc[(problem, solver),".50 Relative Error"]
-            yvals = df_agg.loc[(problem, solver),"Cost Mean"].values if MSE else df_agg.loc[(problem, solver),".50 Cost"].values
+            xvals = df.loc[(problem, solver),"Relative Root MSE"].values if MSE else df.loc[(problem, solver),".50 Relative Error"]
+            yvals = df.loc[(problem, solver),"Cost Mean"].values if MSE else df.loc[(problem, solver),".50 Cost"].values
             rel_root_mse_sc = Scatter(
                 y = yvals,
                 x = xvals,
@@ -63,23 +63,23 @@ def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=F
                 mode="lines + markers",
                line={"color": solver_colors.get(solver), "dash": solver_dashes.get(solver)},
                 error_x={
-                    "array": df_agg.loc[(problem, solver),".75 Relative Error"].values - xvals,
-                    "arrayminus":xvals-df_agg.loc[(problem, solver),".25 Relative Error"].values,
+                    "array": df.loc[(problem, solver),".75 Relative Error"].values - xvals,
+                    "arrayminus":xvals-df.loc[(problem, solver),".25 Relative Error"].values,
                     "type": "data",
                     "symmetric":False,
                     "thickness": 0.5
                 },
                 error_y={
-                    "array": df_agg.loc[(problem, solver),".75 Cost"].values - yvals,
-                    "arrayminus":yvals-df_agg.loc[(problem, solver),".25 Cost"].values,
+                    "array": df.loc[(problem, solver),".75 Cost"].values - yvals,
+                    "arrayminus":yvals-df.loc[(problem, solver),".25 Cost"].values,
                     "type": "data",
                     #"symmetric":True,
                     "thickness": 0.5
                 }
             )
             # rel_err_median = Scatter(
-            #     y = df_agg.loc[(problem, solver),".50 Cost"].values,
-            #     x = df_agg.loc[(problem, solver),".50 Relative Error"].values,
+            #     y = df.loc[(problem, solver),".50 Cost"].values,
+            #     x = df.loc[(problem, solver),".50 Relative Error"].values,
             #     mode="markers",
             #     marker={"color": solver_colors.get(solver), "symbol":"circle-x"},
             #     showlegend=False
@@ -115,10 +115,8 @@ def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=F
                               "exponentformat" : 'e'})
             fig.update_yaxes({"title":"Cost","type":"log","showexponent":'all',"exponentformat" : 'e'})
             fig.update_layout(title="Cost-Error Plot for " + problem)
+            fig.update_layout(**layout)
         out.append(fig)
-        if save_to_resp_path:
-            p = commonprefix(df_agg.loc[(problem),"Path"].values.tolist())
-            fig.write_image(path.join(p, fig.layout.title["text"] + ".pdf"))
     if one_plot:
         return one_fig
     return out
