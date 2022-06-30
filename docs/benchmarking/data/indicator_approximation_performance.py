@@ -4,7 +4,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dir", type=str, default="/cbree_sim/indicator_functions_performance")
+parser.add_argument("--dir", type=str, default="docs/benchmarking/data/cbree_sim/indicator_functions_performance")
 parser.add_argument("--counter",
                     type=int,
                     default=0)
@@ -14,9 +14,8 @@ args = parser.parse_args()
 # Set up solvers
 
 keywords = {
-    "stepsize_tolerance" : [0.1, 1],
     "mixture_model": ["GM"],
-    "cvar_tgt":[1,2,10],
+    "cvar_tgt":[1,10],
     "lip_sigma": [1],
     "tgt_fun": ["algebraic","tanh","arctan","erf","relu","sigmoid"]}
 
@@ -45,11 +44,8 @@ problem_list = ree.problems_lowdim + [ree.make_fujita_rackwitz(d) for d in dims]
 
 # set up other parameters
 
-sample_sizes =[1000, 6000]
+sample_sizes =[1000]
 num_runs = 200
-
-
-
 
 def main():
     total = len(solver_list)*len(sample_sizes)*len(problem_list)

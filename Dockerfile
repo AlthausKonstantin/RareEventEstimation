@@ -1,6 +1,7 @@
 # https://github.com/docker-library/docs/tree/master/python#how-to-use-this-image
 # build it: docker build --pull --rm -f "Dockerfile" -t rareeventestimation:latest "."
-# enter docker shell, bind ./local_dir to /app/: docker run -it --entrypoint /bin/sh -v  "$(pwd)"/local_dir: /app/ rareeventestimation
+# enter docker shell, bind ./local_dir to /app/: docker run -it --entrypoint /bin/sh -v  "$(pwd)"/local_dir:/app/ rareeventestimation
+# save container: docker save -o rareeventestimation_docker.tar rareeventestimation:latest
 
 
 FROM python:3

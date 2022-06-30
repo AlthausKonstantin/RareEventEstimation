@@ -23,3 +23,16 @@ Interested in contributing? Check out the contributing guidelines. Please note t
 ## Credits
 
 `rareeventestimation` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
+
+This package contains code I have not written myself.
+
+### Code from the Engineering Risk Analysis Group, Technical University of Munich
+All files in `rareeventestimation/src/era` and `rareeventestimation/src/sis` are
+written by the [ERA Group](https://www.cee.ed.tum.de/era/era-group/) and
+licensed under the MIT license. I have added minor changes.
+
+### Code from Dr. Fabian Wagner
+All files in `rareeventestimation/src/enkf` are written by [Dr. Fabian Wagner](https://www-m2.ma.tum.de/bin/view/Allgemeines/FabianWagner). I have added minor changes.
+
+
+

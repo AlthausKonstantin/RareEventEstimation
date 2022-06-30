@@ -141,3 +141,9 @@ dmypy.json
 # MacOS
 **.DS_Store
 .vscode/settings.json
+
+# data
+docs/benchmarking/data/**/*.csv
+docs/figures/data/*.csv
+docs/figures/data/*.pkl
+**/*.DS_Store

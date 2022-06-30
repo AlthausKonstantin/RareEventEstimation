@@ -140,9 +140,8 @@ def study_cbree_observation_window(prob:Problem,
     """
     with NamedTemporaryFile(prefix=prefix, suffix=".csv", delete=False, dir=dir) as f:
         file_name = f.name   
-    
-    estimtates = zeros(num_runs)
     write_header=True
+    estimtates = zeros(num_runs)
     for i in range(num_runs):
         solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": False, "save_history": True, "return_caches":True}, in_situ=False)
         if reset_dict is not None:
@@ -162,17 +161,20 @@ def study_cbree_observation_window(prob:Problem,
             df["Cost"]=solution.costs
             df["Steps"]=solution.num_steps
             df["Message"]=solution.msg
-            if save_other and other_list is None:
-                for c in solution.other.keys():
-                    df[c] = [solution.other[c]]
-            if other_list is not None:
-                for c in other_list:
-                    df[c] = [solution.other.get(c, pd.NA)]
+            if solution.other is not None:
+                if save_other and other_list is None:
+                    for c in solution.other.keys():
+                        df[c] = [solution.other[c].tolist()]
+                if other_list is not None:
+                    for c in other_list:
+                        df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
+                        df[c] = df[c].map(list)
             if addtnl_cols is not None:
                 for k,v in addtnl_cols.items():
                     df[k]=v
             df["observation_window"]=0
-            df.to_csv(file_name, mode="a", header=not path.exists(file_name))
+            df.to_csv(file_name, mode="a", header=write_header)
+            write_header=False
             # Now solve with observation window
             for win_len in observation_window_range:
                 # set up solver
@@ -202,19 +204,20 @@ def study_cbree_observation_window(prob:Problem,
                 df["Cost"]=solution.costs
                 df["Steps"]=solution.num_steps
                 df["Message"]=solution.msg
-                if save_other and other_list is None:
-                    for c in solution.other.keys():
-                        df[c] = solution.other[c]
-                if other_list is not None:
-                    for c in other_list:
-                        df[c] = solution.other.get(c, pd.NA)
+                if solution.other is not None:
+                    if save_other and other_list is None:
+                        for c in solution.other.keys():
+                            df[c] = [solution.other[c].tolist()]
+                    if other_list is not None:
+                        for c in other_list:
+                            df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
+                            df[c] = df[c].map(list)
                 if addtnl_cols is not None:
                     for k,v in addtnl_cols.items():
                         df[k]=v
                 df["observation_window"]=win_len       
                 # save
-                df.to_csv(file_name, mode="a", header=write_header)
-                write_header=False
+                df.to_csv(file_name, mode="a", header=False)
                 
             # talk
             if verbose:

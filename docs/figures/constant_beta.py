@@ -12,8 +12,9 @@ d=50
 seed=1
 cvar_tgt=5
 # Solve problem with constant and adaptive termperature, plot results
-cbree_const = ree.CBREE(beta_adaptivity_scheme=None,
+cbree_const = ree.CBREE(beta_adaptivity=1.0,
                       save_history=True,
+                      stepsize_tolerance=1,
                       seed=seed,
                       return_other = True,
                       divergence_check=False,
@@ -23,6 +24,7 @@ cbree_const = ree.CBREE(beta_adaptivity_scheme=None,
                       )
 cbree = ree.CBREE(save_history=True,
                 seed=seed,
+                stepsize_tolerance=1,
                 return_other=True,
                 divergence_check=False,
                 return_caches = True,
@@ -96,9 +98,9 @@ for solver in solver_list:
         col=1
     )
 # Add vertical lines
-iters = [3,30]
+iters = [3,19]
 for i in iters:
-    fig.add_vline(i)
+    fig.add_vline(i,line_width=0.5)
 # style and save fig
 fig.update_yaxes(title_text="Rel. Error", type="log", row=1, col=1)
 fig.update_yaxes(title_text=STR_J_ESS, row=3, col=1)
@@ -106,18 +108,18 @@ fig.update_yaxes(title_text=STR_SIGMA_N, title_standoff=0, row=2, col=1, seconda
 fig.update_yaxes(title_text=STR_BETA_N, row=2, col=1, secondary_y=False)
 fig.update_xaxes(title_text="Iteration <i>n<i>", row=3, col=1)
 fig.update_layout(**my_layout)
-fig.write_image(fig_name + ".png")
+fig.write_image(fig_name + ".png",scale=7)
 fig.show()
 # Save a info for the figure
-fig_description = f"Solving {prob.name} with the CBREE method using  \
+fig_description = f"Solving the {prob.name} with the CBREE method using  \
 $J = {N}$ particles, \
-stopping criterion $\\Delta_\\{{\\text{{Target}}}} = {cvar_tgt}$, \
-stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {cbree.tol}$, \
-controlling the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = {cbree.sigma_inc_max}$ \
+stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$, \
+stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {cbree.stepsize_tolerance}$, \
+controlling the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = {cbree.lip_sigma}$ \
 and approximating the indicator function with {indicator_approx_latex_names[cbree.tgt_fun]}. \
 No divergence check has been performed and the solver was able to run for at most {cbree.num_steps} iterations. \
 The vertical lines mark iterations whose weights we investigate."
-with open(fig_name+".txt", "w") as file:
+with open("desc_constant_beta.tex", "w") as file:
     file.write(fig_description)
 print(fig_description)
 
@@ -131,8 +133,8 @@ for i_n, i in enumerate(iters):
     for soln, sol in enumerate(solution_list):
         
         w = solver_list[soln]._CBREE__compute_weights(sol.other["cache_list"][i], return_weights=True)
-        hist_name = f"<i>log</i> of weights <i><b>h<sup>{i}</sup></b></i>" +(  f", {STR_BETA_N} constant" \
-            if solver_list[soln].beta_adaptivity_scheme == None else "") + \
+        hist_name = f"<i>log</i> of weights <i><b>w<sup>{i}</sup></b></i>" +(  f", {STR_BETA_N} constant" \
+            if not solver_list[soln].beta_adaptivity else "") + \
             f", Skewness {sp.stats.skew(np.exp(w)):.1f}"
         hist = go.Histogram(
             x=np.log(w),
@@ -151,8 +153,14 @@ for i_n, i in enumerate(iters):
 hist_fig.update_xaxes(range=x_lims*1.01)
 for soln, sol in enumerate(solution_list):
     for i_n, i in enumerate(iters):
-        hist_fig.update_xaxes(title=f"<i>log(<b>h<sup>{i}</sup></b>)<i>", row=i_n+1, col = soln+1,title_standoff=0)
+        hist_fig.update_xaxes(title=f"<i>log(<b>w<sup>{i}</sup></b>)<i>", row=i_n+1, col = soln+1,title_standoff=0)
 hist_fig.update_yaxes(range=[0,250])
 hist_fig.update_layout(**my_layout)
-hist_fig.write_image(hist_fig_name + ".png")
+hist_fig.update_layout(margin_t=50)
+hist_fig.for_each_annotation(lambda a: a.update(y=a.y+0.01))
+hist_fig.show()
+hist_fig.write_image(hist_fig_name + ".png",scale=WRITE_SCALE)
+
+# %%
+fig.write_image("test.png",scale=WRITE_SCALE)
 # %%
