@@ -44,7 +44,7 @@ problem_list = ree.problems_lowdim + [ree.make_fujita_rackwitz(d) for d in dims]
 
 # set up other parameters
 
-sample_sizes =[1000]
+sample_sizes =[3000]
 num_runs = 200
 
 def main():
