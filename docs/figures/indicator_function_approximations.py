@@ -21,7 +21,7 @@ fun_dict = {
 s1 =1
 s2 =5
 sigmas= {"dot":1,
-         "dash":10}
+         "dash":1000}
 # Plot the smoothed indicator functions
 fig = go.Figure()
 for line_style, s in sigmas.items():

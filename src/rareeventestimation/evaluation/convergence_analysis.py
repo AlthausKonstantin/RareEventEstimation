@@ -117,6 +117,7 @@ def study_cbree_observation_window(prob:Problem,
                                    verbose=True,
                                    observation_window_range=range(2,15),
                                    reset_dict=None,
+                                   solve_from_caches_callbacks=None,
                                    save_other=False,
                                    other_list=None,
                                    addtnl_cols= None) -> str:
@@ -133,7 +134,8 @@ def study_cbree_observation_window(prob:Problem,
         prefix (str, optional): Prefix to csv file name. Defaults to "".
         verbose (bool, optional): Whether to print some information during solving. Defaults to True.
         observation_window_range (optional): Redo runs with  `observation window` values specified here. Defaults to range(2,15)
-        reset_dict (dict, optional): Reset the attributes of `solver` after each run according to this dict. Defaults to None.
+        reset_dict (dict, optional): Reset the attributes of `solver` before each run according to this dict. Defaults to None.
+        solve_from_caches_callbacks (dict, optional): Apply callbacks (values of dict) when solving from caches. Add name of callback (keys of dict) as a column to results. Defaults to None. 
         save_other (bool, optional): Whether to save the entries from `other` (attribute of solution object) in the csv file. Defaults to False.
         other_list (_type_, optional): Whether to save these entries from `other` (attribute of solution object) in the csv file.. Defaults to None.
         addtnl_cols (dict, optional): Add columns with key names and fill with values from this dict. Defaults to None.
@@ -142,8 +144,9 @@ def study_cbree_observation_window(prob:Problem,
         file_name = f.name   
     write_header=True
     estimtates = zeros(num_runs)
+    original_callback = solver.callback # save this, callback changes before solving_from_caches
     for i in range(num_runs):
-        solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": False, "save_history": True, "return_caches":True}, in_situ=False)
+        solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": False, "save_history": True, "return_caches":True, "callback":original_callback}, in_situ=False)
         if reset_dict is not None:
             solver = solver.set_options(reset_dict, in_situ=False)
             
@@ -173,51 +176,56 @@ def study_cbree_observation_window(prob:Problem,
                 for k,v in addtnl_cols.items():
                     df[k]=v
             df["observation_window"]=0
+            df["callback"]= solver.callback is not None
             df.to_csv(file_name, mode="a", header=write_header)
             write_header=False
-            # Now solve with observation window
+            # Now solve with observation window and callbacks
+            if solve_from_caches_callbacks is None:
+                solve_from_caches_callbacks = {False: None}
             for win_len in observation_window_range:
-                # set up solver
+                for callback_name, callback in solve_from_caches_callbacks.items():
+                    # set up solver
 
-                solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": True, "observation_window":win_len}, in_situ=False)
-                if reset_dict is not None:
-                    solver = solver.set_options(reset_dict, in_situ=False)
-                    
-                # solve
-                try: 
-                    solution = solver.solve_from_caches(deepcopy(cache_list))
-                except Exception as e:
-                    # set up emtpy solution
-                    solution = Solution(prob.sample[None,...],
-                                        nan * zeros(1),
-                                        nan * zeros(prob.sample.shape[0]),
-                                        zeros(1),
-                                        0,
-                                        str(e))
-                df = pd.DataFrame(index=[0])
-                df["Solver"] = solver.name
-                df["Problem"]=prob.name
-                df["Seed"]=i
-                df["Sample Size"] = prob.sample.shape[0]
-                df["Truth"]=prob.prob_fail_true
-                df["Estimate"] = solution.prob_fail_hist[-1]
-                df["Cost"]=solution.costs
-                df["Steps"]=solution.num_steps
-                df["Message"]=solution.msg
-                if solution.other is not None:
-                    if save_other and other_list is None:
-                        for c in solution.other.keys():
-                            df[c] = [solution.other[c].tolist()]
-                    if other_list is not None:
-                        for c in other_list:
-                            df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
-                            df[c] = df[c].map(list)
-                if addtnl_cols is not None:
-                    for k,v in addtnl_cols.items():
-                        df[k]=v
-                df["observation_window"]=win_len       
-                # save
-                df.to_csv(file_name, mode="a", header=False)
+                    solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": True, "observation_window":win_len}, in_situ=False)
+                    if reset_dict is not None:
+                        solver = solver.set_options(reset_dict, in_situ=False)
+                    solver.callback = callback    
+                    # solve
+                    try: 
+                        solution = solver.solve_from_caches(deepcopy(cache_list))
+                    except Exception as e:
+                        # set up emtpy solution
+                        solution = Solution(prob.sample[None,...],
+                                            nan * zeros(1),
+                                            nan * zeros(prob.sample.shape[0]),
+                                            zeros(1),
+                                            0,
+                                            str(e))
+                    df = pd.DataFrame(index=[0])
+                    df["Solver"] = solver.name
+                    df["Problem"]=prob.name
+                    df["Seed"]=i
+                    df["Sample Size"] = prob.sample.shape[0]
+                    df["Truth"]=prob.prob_fail_true
+                    df["Estimate"] = solution.prob_fail_hist[-1]
+                    df["Cost"]=solution.costs
+                    df["Steps"]=solution.num_steps
+                    df["Message"]=solution.msg
+                    if solution.other is not None:
+                        if save_other and other_list is None:
+                            for c in solution.other.keys():
+                                df[c] = [solution.other[c].tolist()]
+                        if other_list is not None:
+                            for c in other_list:
+                                df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
+                                df[c] = df[c].map(list)
+                    if addtnl_cols is not None:
+                        for k,v in addtnl_cols.items():
+                            df[k]=v
+                    df["observation_window"]=win_len       
+                    df["callback"] = callback_name
+                    # save
+                    df.to_csv(file_name, mode="a", header=False)
                 
             # talk
             if verbose:
@@ -248,11 +256,12 @@ def load_data(pth:str, pattern:str ,recursive=True, kwargs={}) -> pd.DataFrame:
     df = pd.concat([pd.read_csv(f, **kwargs) for f in files],ignore_index=True)
     df.drop_duplicates(inplace=True)
     df.reset_index(inplace=True)
+    # Now find all columns containing arrays (as strings) and transform 'em
     c = CBREECache(zeros(0),  zeros(0),  zeros(0))
     cache_attributes = [a for a in dir(c) if a[0] != "_"]
     my_eval = lambda cell: asarray(literal_eval(cell.replace("nan", "None")))
     for c in df.columns:
-        if c in cache_attributes and isinstance(df[c][0], str) :
+        if c in cache_attributes and isinstance(df[c][0], str) and df[c][0][0]=="[" :
             df[c] = df[c].apply(my_eval)
     return df
 

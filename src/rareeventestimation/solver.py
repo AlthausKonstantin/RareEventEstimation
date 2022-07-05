@@ -378,6 +378,7 @@ class CBREE(Solver):
             
             # check for convergence
             self.__convergence_check(cache_list)
+            
             if self.callback is not None:
                 try:
                     cache_list[-1] = self.callback(cache_list[-1], self)
@@ -765,6 +766,14 @@ class CBREE(Solver):
             
             # check for convergence
             self.__convergence_check(cache_list_new)
+            if self.callback is not None:
+                try:
+                    cache_list_new[-1] = self.callback(cache_list_new[-1], self)
+                except Exception as e:
+                    msg = str(e)
+                    if not self.verbose:
+                        warn(str(e))
+                    break
             
             # maybe print info about this iteration
             if self.verbose:

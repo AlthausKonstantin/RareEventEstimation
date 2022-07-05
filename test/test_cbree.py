@@ -16,3 +16,4 @@ def test_cbree():
                       verbose=True)
         sol = cbree.solve(p)
     assert sol.get_rel_err(p)[-1] < 0.08, f"Error too large for {p.name}"
+test_cbree()

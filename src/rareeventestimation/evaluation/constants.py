@@ -1,10 +1,10 @@
 import plotly.express as px
-cmap = px.colors.qualitative.Safe 
+CMAP = px.colors.qualitative.Safe 
 import plotly.io as pio
-my_template = pio.templates["plotly_white"]
-my_template.update({"layout.colorway": cmap})
-my_layout = {
-    "template":my_template,
+MY_TEMPLATE = pio.templates["plotly_white"]
+MY_TEMPLATE.update({"layout.colorway": CMAP})
+MY_LAYOUT = {
+    "template":MY_TEMPLATE,
     "font_family":"Serif",
     "autosize":False,
     "width":700,
@@ -17,7 +17,7 @@ my_layout = {
         pad=4
     )}
 
-indicator_approx_latex_names = {
+INDICATOR_APPROX_LATEX_NAME = {
     "sigmoid": f"$I_\\text{{sig}}$",
     "relu": f"$I_\\text{{ReLU}}$",
     "algebraic": f"$I_\\text{{alg}}$",

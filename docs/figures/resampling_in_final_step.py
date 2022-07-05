@@ -13,7 +13,7 @@ import numpy as np
 import scipy as sp
 import sympy as smp
 import pandas as pd
-from layout import *
+from rareeventestimation.evaluation.constants import *
 import plotly.express as px
 import plotly.graph_objects as go
 %load_ext autoreload
@@ -158,7 +158,7 @@ if not path.exists(path.join(out_dir, "processed_data.pkl")):
 else:
     df_agg = pd.read_pickle(path.join(out_dir, "processed_data.pkl"))
 # %% Plot relative error of different sampling methods
-figs = ree.make_accuracy_plots(df_agg, layout=my_layout, cmap=cmap)
+figs = ree.make_accuracy_plots(df_agg, layout=MY_LAYOUT, CMAP=CMAP)
 fig = figs[0]
 
 fig_name="resampling_in_final_step"
@@ -172,7 +172,7 @@ $J \\in \\{{{', '.join(map(str, sample_sizes))}\\}}$ particles, \
 stopping criterion $\\Delta_{{\\text{{Target}}}} = {solver.cvar_tgt}$, \
 stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {solver.stepsize_tolerance}$, \
 controlling the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = {solver.lip_sigma}$ \
-and approximating the indicator function with {indicator_approx_latex_names[solver.tgt_fun]}. \
+and approximating the indicator function with {INDICATOR_APPROX_LATEX_NAME[solver.tgt_fun]}. \
 No divergence check has been performed. \
 Each simulation was repeated {num_runs} times. \
 While the markers present the empirical means of the visualized data, the error bars are drawn from first to the third quartile."
@@ -207,7 +207,7 @@ fig_hist = px.box(df_ess,
                         y = "J_ESS",
                         color="Solver",
                         points=False,
-                        color_discrete_sequence = cmap)
+                        color_discrete_sequence = CMAP)
 df_ess_agg = df_ess.groupby(["Solver","Sample Size"]).mean().reset_index()
 # for s in df_ess.Solver.unique():
 #     tmp = df_ess_agg[df_ess_agg.Solver == s]
@@ -220,7 +220,7 @@ df_ess_agg = df_ess.groupby(["Solver","Sample Size"]).mean().reset_index()
 #             marker_symbol=1,
 #         )
 #     )
-fig_hist.update_layout(**my_layout)
+fig_hist.update_layout(**MY_LAYOUT)
 fig_hist.update_xaxes(title_text = "Sample Size <i>J</i>")
 fig_hist.update_yaxes(title_text = f"Relative Error of {STR_J_ESS} Estimate")
 fig_hist.write_image(fig_name + "_boxplot.png",scale=WRITE_SCALE)

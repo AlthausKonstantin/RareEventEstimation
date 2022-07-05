@@ -3,7 +3,7 @@ from copy import deepcopy
 import rareeventestimation as ree
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from layout import *
+from rareeventestimation.evaluation.constants import *
 import numpy as np
 %load_ext autoreload
 %autoreload 2
@@ -95,7 +95,7 @@ fig.update_yaxes(title_text="\u0394(<i><b>r</b><sup>n</sup></i>)", row=3, col=1,
 fig.update_yaxes(title_text=f"{STR_SIGMA_N} and {STR_H_N}", title_standoff=10, row=2, col=1, secondary_y=True)
 fig.update_yaxes(title_text=STR_BETA_N, row=2, col=1, secondary_y=False)
 fig.update_xaxes(title_text="Iteration <i>n<i>", row=3, col=1)
-fig.update_layout(**my_layout)
+fig.update_layout(**MY_LAYOUT)
 fig2 = deepcopy(fig)
 fig.add_vrect(0,n_cut, line_width=0.5)
 fig.show()
@@ -149,7 +149,7 @@ $J = {J}$ particles, \
 stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$, \
 stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {solver.stepsize_tolerance}$, \
 controlling the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = {solver.lip_sigma}$ \
-and approximating the indicator function with {indicator_approx_latex_names[solver.tgt_fun]}."
+and approximating the indicator function with {INDICATOR_APPROX_LATEX_NAME[solver.tgt_fun]}."
 print(fig_description)
 fig.write_image(fig_name + ".png", scale =WRITE_SCALE)
 fig2.write_image(fig_name + "_zoom.png", scale =WRITE_SCALE)

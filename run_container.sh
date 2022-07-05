@@ -1,0 +1,2 @@
+#!/usr/bin/sh
+nohup sudo docker run -i --entrypoint /bin/sh < script_diffusion.sh  -v /home/jd9169657/simulations:/app -v /home/jd9169657/rareeventestimation/src:/src -v /home/jd9169657/rareeventestimation/docs:/docs -d rareeventestimation 

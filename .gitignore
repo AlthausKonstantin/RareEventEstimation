@@ -147,3 +147,4 @@ docs/benchmarking/data/**/*.csv
 docs/figures/data/*.csv
 docs/figures/data/*.pkl
 **/*.DS_Store
+docs/.DS_Store

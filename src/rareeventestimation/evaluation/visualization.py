@@ -1,6 +1,7 @@
 from numpy import arange, cumsum, log, sqrt, zeros, array, minimum, maximum, sum
 import pandas as pd
 from rareeventestimation.evaluation.convergence_analysis import aggregate_df
+from rareeventestimation.evaluation.constants import CMAP
 import plotly.express as px
 import re
 from plotly.graph_objects import Figure, Scatter,Bar, Contour, Layout
@@ -11,10 +12,9 @@ from plotly.subplots import make_subplots
 from os.path  import commonpath
 import plotly.colors
 from PIL import ImageColor
-cmap = px.colors.qualitative.Plotly
 
 
-def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=False, one_plot=False, MSE=True, cmap=cmap, layout={}) -> list:
+def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=False, one_plot=False, MSE=True, CMAP=CMAP, layout={}) -> list:
     """Plot rel. root MSE of estimates vs mean of costs.
 
     Args:
@@ -29,12 +29,12 @@ def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=F
 
     # Set up dicts with (solver,color) and (solver,line-style) entries
     solver_colors = {
-        s: cmap[i%len(cmap)] 
+        s: CMAP[i%len(CMAP)] 
         for (i, s) in enumerate(df.index.get_level_values(1).unique())
         }
     if one_plot:
         solver_colors = {
-            s: cmap[i%len(cmap)] 
+            s: CMAP[i%len(CMAP)] 
             for (i, s) in enumerate(df.index.droplevel(2).unique())
             }
     solver_dashes = dict.fromkeys(solver_colors.keys())
@@ -135,7 +135,7 @@ def make_mse_plots(df:pd.DataFrame, save_to_resp_path=True) ->dict:
              x = df_agg.loc[k,"Estimate Bias"].values**2,
             name = "Bias Squared",
             mode="lines + markers",
-            line={"color": cmap[0]},
+            line={"color": CMAP[0]},
             stackgroup = "one",
             orientation="h"
         )
@@ -144,7 +144,7 @@ def make_mse_plots(df:pd.DataFrame, save_to_resp_path=True) ->dict:
              x = df_agg.loc[k,"Estimate Variance"].values,
             name = "Variance",
             mode="lines + markers",
-            line={"color": cmap[1]},
+            line={"color": CMAP[1]},
             stackgroup = "one",
             orientation="h"
         )
@@ -257,8 +257,8 @@ def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     # Plot monitored quants
 
     f.add_trace(Scatter(x=xx, y=sum(sol.lsf_eval_hist <= 0,axis=1)/p2.sample.shape[0], name= "SFP"),  row=3, col=1)
-    f.add_trace(Scatter(x=xx, y=sol.other["sfp_slope"], name= "SFP Slope", line_color = cmap[(len(f.data)-1) % len(cmap)], line_dash="dash"),  row=3, col=1)
-    f.add_trace(Scatter(x=xx, y=sol.other["slope_cvar"], name= "CVAR Slope", line_color = cmap[1], line_dash="dash"),  row=3, col=1)
+    f.add_trace(Scatter(x=xx, y=sol.other["sfp_slope"], name= "SFP Slope", line_color = CMAP[(len(f.data)-1) % len(CMAP)], line_dash="dash"),  row=3, col=1)
+    f.add_trace(Scatter(x=xx, y=sol.other["slope_cvar"], name= "CVAR Slope", line_color = CMAP[1], line_dash="dash"),  row=3, col=1)
     f.update_layout(hovermode="x unified")
     return f
 

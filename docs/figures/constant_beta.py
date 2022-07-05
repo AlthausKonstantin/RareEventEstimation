@@ -4,7 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import scipy as sp
-from layout import *
+from rareeventestimation.evaluation.constants import *
 %load_ext autoreload
 %autoreload 2
 N = 5000
@@ -56,7 +56,7 @@ for solver in solver_list:
             y=sol.get_rel_err(prob),
             name = f"Relative Error",
             line_dash=solver_dash[str(solver)],
-            marker_color=cmap[0],
+            marker_color=CMAP[0],
             marker_symbol=solver_marker[str(solver)],
             legendgroup=str(solver), 
             legendgrouptitle_text=str(solver)
@@ -76,7 +76,7 @@ for solver in solver_list:
             y=sol.other[param],
             name = name,
             line_dash=solver_dash[str(solver)],
-            marker_color=cmap[i+1],
+            marker_color=CMAP[i+1],
             marker_symbol=solver_marker[str(solver)],
             legendgroup=str(solver), 
         ),
@@ -90,7 +90,7 @@ for solver in solver_list:
             y=sol.other["ess"],
             name = STR_J_ESS,
             line_dash=solver_dash[str(solver)],
-            marker_color=cmap[3],
+            marker_color=CMAP[3],
             marker_symbol=solver_marker[str(solver)],
             legendgroup=str(solver), 
         ),
@@ -107,7 +107,7 @@ fig.update_yaxes(title_text=STR_J_ESS, row=3, col=1)
 fig.update_yaxes(title_text=STR_SIGMA_N, title_standoff=0, row=2, col=1, secondary_y=True)
 fig.update_yaxes(title_text=STR_BETA_N, row=2, col=1, secondary_y=False)
 fig.update_xaxes(title_text="Iteration <i>n<i>", row=3, col=1)
-fig.update_layout(**my_layout)
+fig.update_layout(**MY_LAYOUT)
 fig.write_image(fig_name + ".png",scale=7)
 fig.show()
 # Save a info for the figure
@@ -116,7 +116,7 @@ $J = {N}$ particles, \
 stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$, \
 stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {cbree.stepsize_tolerance}$, \
 controlling the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = {cbree.lip_sigma}$ \
-and approximating the indicator function with {indicator_approx_latex_names[cbree.tgt_fun]}. \
+and approximating the indicator function with {INDICATOR_APPROX_LATEX_NAME[cbree.tgt_fun]}. \
 No divergence check has been performed and the solver was able to run for at most {cbree.num_steps} iterations. \
 The vertical lines mark iterations whose weights we investigate."
 with open("desc_constant_beta.tex", "w") as file:
@@ -139,7 +139,7 @@ for i_n, i in enumerate(iters):
         hist = go.Histogram(
             x=np.log(w),
             showlegend=False,
-            marker_color = cmap[0],
+            marker_color = CMAP[0],
         )
         hist_fig.add_trace(hist, row=i_n+1, col=soln+1)
         hist_fig.layout.annotations[plot_counter].update(text= hist_name)
@@ -155,7 +155,7 @@ for soln, sol in enumerate(solution_list):
     for i_n, i in enumerate(iters):
         hist_fig.update_xaxes(title=f"<i>log(<b>w<sup>{i}</sup></b>)<i>", row=i_n+1, col = soln+1,title_standoff=0)
 hist_fig.update_yaxes(range=[0,250])
-hist_fig.update_layout(**my_layout)
+hist_fig.update_layout(**MY_LAYOUT)
 hist_fig.update_layout(margin_t=50)
 hist_fig.for_each_annotation(lambda a: a.update(y=a.y+0.01))
 hist_fig.show()
