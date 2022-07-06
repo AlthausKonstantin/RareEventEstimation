@@ -78,7 +78,7 @@ def main():
                                     prefix=f"{problem.name} {counter} ".replace(" ", "_"),
                                     save_other=False,
                                     addtnl_cols=kwarg_list[i])
-                    counter += 1
+                counter += 1
 
 if __name__ == "__main__":
    main()
