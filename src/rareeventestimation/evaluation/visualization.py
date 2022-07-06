@@ -1,4 +1,4 @@
-from numpy import arange, cumsum, log, sqrt, zeros, array, minimum, maximum, sum
+from numpy import arange, cumsum, log, ndarray, sqrt, zeros, array, minimum, maximum, sum, amin, amax
 import pandas as pd
 from rareeventestimation.evaluation.convergence_analysis import aggregate_df
 from rareeventestimation.evaluation.constants import CMAP
@@ -235,6 +235,12 @@ def get_continuous_color(colorscale, intermed):
         colortype="rgb",
     )
 
+def sr_to_color_dict(sr: pd.Series, color_scale_name="Viridis") -> dict:
+    keys = sr.unique()
+    arr = keys - amin(keys)
+    arr /= amax(arr)
+    vals = get_color(color_scale_name, arr)
+    return dict(zip([str(k) for k in keys], vals))
 
 def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     f = make_subplots(rows=3, shared_xaxes=True)
@@ -262,46 +268,49 @@ def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     f.update_layout(hovermode="x unified")
     return f
 
-def add_trace_to_subplots(f,**tr_kwargs):
+def add_scatter_to_subplots(fig, num_rows, num_cols, **scatter_kwargs):
+    for i in num_rows:
+        for j in num_cols:
+            fig.append(Scatter(**scatter_kwargs), row = i+1, col = j+1)
+    return fig
     
     
     
     
-    
-    def make_rel_error_plot(self, prob: Problem, **kwargs):
-        """
-        Make a plot of the relative error of estimated probability of failure.
+def make_rel_error_plot(self, prob: Problem, **kwargs):
+    """
+    Make a plot of the relative error of estimated probability of failure.
 
-        Args:
-            prob (Problem): Instance of Problem class.
+    Args:
+        prob (Problem): Instance of Problem class.
 
-        Returns:
-            [plotly.graph_objs._figure.Figure]: Plotly figure with plot.
-        """
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
+    Returns:
+        [plotly.graph_objs._figure.Figure]: Plotly figure with plot.
+    """
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-        # Cmpute and plot relative error
+    # Cmpute and plot relative error
 
-        self.__compute_rel_error(prob)
-        s = Scatter(y=self.prob_fail_r_err, name="Relative Error")
-        fig.add_trace(s, secondary_y=False)
-        fig.update_layout(showlegend=True, xaxis_title="Iteration")
-        fig.update_yaxes(title_text="Relative Error",
-                         secondary_y=False, type="log")
+    self.__compute_rel_error(prob)
+    s = Scatter(y=self.prob_fail_r_err, name="Relative Error")
+    fig.add_trace(s, secondary_y=False)
+    fig.update_layout(showlegend=True, xaxis_title="Iteration")
+    fig.update_yaxes(title_text="Relative Error",
+                        secondary_y=False, type="log")
 
-        # Maybe compute und plot percentage of particles in fail. domain
-        if kwargs.get("show_failure_percentage", False):
-            self.__compute_perc_failure()
-            b = Bar(y=self.perc_failure, name="Percentage of Particles in Failure Domain", marker={
-                       "opacity": 0.5})
-            # b = go.Bar(x = arange(1,self.num_steps), y=self.diff_mean, name="Percentage of Particles in Failure Domain", marker={
-            #            "opacity": 0.5})
-            fig.add_trace(b, secondary_y=True)
-            fig.update_yaxes(title_text="Percent", secondary_y=True)
+    # Maybe compute und plot percentage of particles in fail. domain
+    if kwargs.get("show_failure_percentage", False):
+        self.__compute_perc_failure()
+        b = Bar(y=self.perc_failure, name="Percentage of Particles in Failure Domain", marker={
+                    "opacity": 0.5})
+        # b = go.Bar(x = arange(1,self.num_steps), y=self.diff_mean, name="Percentage of Particles in Failure Domain", marker={
+        #            "opacity": 0.5})
+        fig.add_trace(b, secondary_y=True)
+        fig.update_yaxes(title_text="Percent", secondary_y=True)
 
-        return fig
+    return fig
 
-    def plot_iteration(self, iter: int, prob: Problem, delta=1):
+def plot_iteration(self, iter: int, prob: Problem, delta=1):
         """Make a plot of iteration `iter`.
 
         Args:
