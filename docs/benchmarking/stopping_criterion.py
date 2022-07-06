@@ -1,4 +1,5 @@
 #%% 
+from genericpath import exists
 from glob import glob
 from numbers import Real
 from os import listdir, path
@@ -9,47 +10,51 @@ import scipy as sp
 import sympy as smp
 import pandas as pd
 import plotly.express as px
-from rareeventestimation.evaluation.constants import INDICATOR_APPROX_LATEX_NAME
+from rareeventestimation.evaluation.constants import INDICATOR_APPROX_LATEX_NAME, BM_SOLVER_SCATTER_STYLE, MY_LAYOUT, DF_COLUMNS_TO_LATEX, LATEX_TO_HTML, WRITE_SCALE
 import plotly.graph_objects as go
+from get_benchmark_df import get_benchmark_df
 from rareeventestimation.evaluation.visualization import add_scatter_to_subplots, sr_to_color_dict
+import re
 %load_ext autoreload
 %autoreload 2
 
 #%% Load data
-data_dir ="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data/cbree_sim/toy_problems"
-df = ree.load_data(data_dir, "*")
-df.drop(columns=["index", "Unnamed: 0"], inplace=True)
-df.drop_duplicates(inplace=True)
-#%%process data: add obs_window and callback to solver name
-def expand_cbree_name(input, columns=[]) -> str:
-    for col in columns:
-        input.Solver = input.Solver.replace("}", f", '{col}': '{input[col]}'}}")
-    return input
-df = df.apply(expand_cbree_name, axis=1, columns= ['observation_window', 'callback'])
-# %% Pretty names
-to_drop = ["mixture_model"] # info is redundant as resample = False and callback exists
-new_names = {
-    "stepsize_tolerance": "$\\epsilon_{{\\text{{Target}}}}$",
-    "cvar_tgt": "$\\Delta_{{\\text{{Target}}}}$",
-    "lip_sigma": "Lip$(\\sigma)$",
-    "tgt_fun": "Smoothing Function",
-    "observation_window": "$N_{{ \\text{{obs}} }}$",
-    "callback": "IS Density",
-}
-replace_values = {"IS Density": {"False": "GM", "vMFNM Resample": "vMFNM (Resampled)"}}
-df = df.drop(columns=to_drop) \
-    .rename(columns=new_names) \
-    .replace(replace_values)
-#%%process data: add evaluations
-df = ree.add_evaluations(df)
-out_path = path.join(data_dir, "cbree_toy_problems_processed.pkl")
-# 
 
-# %% aggregate
-df_agg = ree.aggregate_df(df)
-# %% remove obs window 0
-df = df[df['$N_{{ \\text{{obs}} }}$']>0].reset_index()
-df_agg = df_agg[df_agg['$N_{{ \\text{{obs}} }}$']>0].reset_index()
+data_dir ="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data/cbree_sim/toy_problems"
+path_df= path.join(data_dir, "cbree_toy_problems_processed.pkl")
+path_df_agg = path.join(data_dir, "cbree_toy_problems_aggregated.pkl")
+if  not (path.exists(path_df) and path.exists(path_df_agg)):
+    df = ree.load_data(data_dir, "*")
+    df.drop(columns=["index", "Unnamed: 0"], inplace=True)
+    df.drop_duplicates(inplace=True)
+    #%%process data: add obs_window and callback to solver name
+    def expand_cbree_name(input, columns=[]) -> str:
+        for col in columns:
+            input.Solver = input.Solver.replace("}", f", '{col}': '{input[col]}'}}")
+        return input
+    df = df.apply(expand_cbree_name, axis=1, columns= ['observation_window', 'callback'])
+    # %% Pretty names
+    to_drop = ["mixture_model"] # info is redundant as resample = False and callback exists
+    replace_values = {"IS Density": {"False": "GM", "vMFNM Resample": "vMFNM (Resampled)"}}
+    df = df.drop(columns=to_drop) \
+        .rename(columns=DF_COLUMNS_TO_LATEX) \
+        .replace(replace_values)
+    #%%process data: add evaluations
+    df = ree.add_evaluations(df)
+    # %% aggregate
+    df_agg = ree.aggregate_df(df)
+    # %% remove obs window 0
+    df = df[df['$N_{{ \\text{{obs}} }}$']>0].reset_index()
+    df_agg = df_agg[df_agg['$N_{{ \\text{{obs}} }}$']>0].reset_index()
+    
+    #%% save
+    df.to_pickle(path_df)
+    df_agg.to_pickle(path_df_agg)
+else:
+    df = pd.read_pickle(path_df)
+    df_agg = pd.read_pickle(path_df_agg)
+df_bm, df_bm_agg = get_benchmark_df()
+
 # %% Make table with used parameters
 def my_number_formatter(x:Real) -> str:
     if int(x)==x:
@@ -63,7 +68,7 @@ def list_to_latex(ls:list) -> str:
     else:
          return f"{', '.join(ls)}"
      
-paras = ["Sample Size"] + list(new_names.values())
+paras = ["Sample Size"] + list(DF_COLUMNS_TO_LATEX.values())
 tbl_params = df_agg.loc[:, tuple(paras)] \
     .replace({"Smoothing Function": INDICATOR_APPROX_LATEX_NAME}) \
     .apply(lambda col: col.sort_values().unique()) \
@@ -105,7 +110,7 @@ tbl.index.name = "$\\epsilon_{{\\text{{Target}}}}$"
 tbl.style.to_latex("performance_stepsize_tolerance.tex", clines="all;data")
 tbl
 
-
+#%% 
 
 #%% make plots
 fig_list= []
@@ -118,6 +123,8 @@ for prob in df_agg["Problem"].unique():
     this_df["cvar_tgt_str"] = this_df["$\\Delta_{{\\text{{Target}}}}$"].apply(str)
     this_df = this_df.sort_values(["$\\Delta_{{\\text{{Target}}}}$", "$N_{{ \\text{{obs}} }}$"])
     
+    this_df_bm = df_bm.query("Problem == @prob & cvar_tgt == 1")
+    
     fig = px.line(
         this_df,
         x = "Relative Root MSE",
@@ -128,20 +135,48 @@ for prob in df_agg["Problem"].unique():
         color="cvar_tgt_str",
         log_x=True,
         log_y=True,
-        markers=True
+        markers=True,
+        labels=LATEX_TO_HTML | {"cvar_tgt_str": LATEX_TO_HTML[DF_COLUMNS_TO_LATEX["cvar_tgt"]]},
+        
     )
     
     num_rows = len(this_df["$N_{{ \\text{{obs}} }}$"].unique())
     num_cols = len(this_df["IS Density"].unique())
-    trace_dict = {
-        "x" : [0.1],
-        "y" : [10000],
-        "legendgrouptitle_text": "name",
-        "marker_color": "blue",
-        "mode": "markers" 
-    }
-    fig = add_scatter_to_subplots(fig, num_rows, num_cols, **trace_dict)
+    for bm_solver in this_df_bm.Solver.unique():
+        dat =this_df_bm.query("Solver == @bm_solver")
+        # nice name
+        solver_name = re.sub(r"\W+", " ",bm_solver)
+        solver_name = re.findall(r"(\bSiS\b)|(\bEnKF\b)|(\bvMFNM\b)|(\bGM\b)|(\baCS\b)", solver_name)
+        solver_name = f"{''.join(solver_name[0])} ({''.join(solver_name[1])})"
+        trace_dict = {
+            "x" : dat["Relative Root MSE"],
+            "y" : dat["Cost Mean"],
+            "legendgrouptitle_text": "Benchmark Methods",
+            "name": solver_name,
+            "legendgroup": "group",
+            "mode": "markers+lines",
+            "opacity": 0.8
+        }
+        trace_dict = trace_dict | BM_SOLVER_SCATTER_STYLE[solver_name]
+        fig = add_scatter_to_subplots(fig, num_rows, num_cols, **trace_dict)
+    fig.update_layout(**MY_LAYOUT)
     fig.show()
+    fig.write_image(f"{prob} stopping criterion.png".replace(" ", "_")lower(), scale=WRITE_SCALE)
+    fig_description = f"Solving the {prob} with the CBREE method using  \
+different parameters.\
+We vary the stopping criterion $\\Delta_{{\\text{{Target}}}}$ (color), \
+the divergence criterion $N_\\text{{obs}}$ (row) and \
+the importance sampling density $\\mu^N$ (column). \
+The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
+and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
+are fixed. \
+Furthermore we plot also the performance of the benchmark methods EnKF\
+(with different importance sampling densities)\
+and SiS (with different MCMC sampling methods). \
+Each marker represents the point estimates based on 200 simulations."
+    with open(f"{prob} stopping criterion_desc.tex".replace(" ", "_").lower(), "w") as file:
+        file.write(fig_description)
+    print(fig_description)
 # %%
 
 # %%

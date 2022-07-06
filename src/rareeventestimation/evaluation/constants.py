@@ -32,3 +32,39 @@ STR_H_N =  "<i>h<sup>n</i></sup>"
 STR_J_ESS = f"<i>J</i><sub>ESS</sub>"
 
 WRITE_SCALE=7
+
+
+BM_SOLVER_SCATTER_STYLE = {
+    "EnKF (vMFNM)":{
+        "line_dash": "dash",
+        "marker_symbol": "square",
+        "marker_color": CMAP[0]},
+    "EnKF (GM)":{
+        "line_dash": "dash",
+        "marker_symbol": "square",
+        "marker_color": CMAP[1]},
+    "SiS (GM)":{
+        "line_dash": "dot",
+        "marker_symbol": "square",
+        "marker_color": CMAP[1]},
+    "SiS (aCS)":{
+        "line_dash": "dot",
+        "marker_symbol": "square",
+        "marker_color": CMAP[1]},
+    
+}
+
+
+DF_COLUMNS_TO_LATEX = {
+        "stepsize_tolerance": "$\\epsilon_{{\\text{{Target}}}}$",
+        "cvar_tgt": "$\\Delta_{{\\text{{Target}}}}$",
+        "lip_sigma": "Lip$(\\sigma)$",
+        "tgt_fun": "Smoothing Function",
+        "observation_window": "$N_{{ \\text{{obs}} }}$",
+        "callback": "IS Density"}
+LATEX_TO_HTML = {
+    "$\\epsilon_{{\\text{{Target}}}}$": "<i>\u03B5</i><sub>Target</sub>" ,
+    "$\\Delta_{{\\text{{Target}}}}$": "\u0394<sub>Target</sub>",
+   "Lip$(\\sigma)$": "Lip(\u03C3)",
+    "$N_{{ \\text{{obs}} }}$":"<i>N</i><sub>obs</sub>",
+    "IS Density": "<i> \u03BC<sup>N</sup></i>"}

@@ -269,9 +269,13 @@ def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     return f
 
 def add_scatter_to_subplots(fig, num_rows, num_cols, **scatter_kwargs):
-    for i in num_rows:
-        for j in num_cols:
-            fig.append(Scatter(**scatter_kwargs), row = i+1, col = j+1)
+    first=True
+    if "showlegend" in scatter_kwargs:
+        del scatter_kwargs["showlegend"]
+    for i in range(num_rows):
+        for j in range(num_cols):
+            fig.append_trace(Scatter(**scatter_kwargs, showlegend=first), row = i+1, col = j+1)
+            first=False
     return fig
     
     
