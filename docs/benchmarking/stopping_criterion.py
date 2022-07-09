@@ -23,10 +23,15 @@ import re
 data_dir ="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data/cbree_sim/toy_problems"
 path_df= path.join(data_dir, "cbree_toy_problems_processed.pkl")
 path_df_agg = path.join(data_dir, "cbree_toy_problems_aggregated.pkl")
-if  not (path.exists(path_df) and path.exists(path_df_agg)):
+if (path.exists(path_df) and path.exists(path_df_agg)):
     df = ree.load_data(data_dir, "*")
     df.drop(columns=["index", "Unnamed: 0"], inplace=True)
     df.drop_duplicates(inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    #%% Round parameters
+    for col in DF_COLUMNS_TO_LATEX.keys():
+        if isinstance(df[col].values[0], float):
+            df[col] = df[col].round(5)
     #%%process data: add obs_window and callback to solver name
     def expand_cbree_name(input, columns=[]) -> str:
         for col in columns:
@@ -43,6 +48,9 @@ if  not (path.exists(path_df) and path.exists(path_df_agg)):
     df = ree.add_evaluations(df)
     # %% aggregate
     df_agg = ree.aggregate_df(df)
+    for col in DF_COLUMNS_TO_LATEX.values():
+        if isinstance(df_agg[col].values[0], float):
+            df_agg[col] = df_agg[col].round(5)
     # %% remove obs window 0
     df = df[df['$N_{{ \\text{{obs}} }}$']>0].reset_index()
     df_agg = df_agg[df_agg['$N_{{ \\text{{obs}} }}$']>0].reset_index()
@@ -110,11 +118,11 @@ tbl.index.name = "$\\epsilon_{{\\text{{Target}}}}$"
 tbl.style.to_latex("performance_stepsize_tolerance.tex", clines="all;data")
 tbl
 
-#%% 
+
 
 #%% make plots
 fig_list= []
-for prob in df_agg["Problem"].unique():
+for prob in ["Convex Problem", "Linear Problem (d=2)", "Fujita Rackwitz (d=2)", "Linear Problem (d=50)"]:# df_agg["Problem"].unique():
     this_df = df_agg.query("Problem == @prob")
     this_df = this_df[this_df["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
     this_df = this_df[this_df["Smoothing Function"] == best_approximation]
@@ -161,7 +169,7 @@ for prob in df_agg["Problem"].unique():
         fig = add_scatter_to_subplots(fig, num_rows, num_cols, **trace_dict)
     fig.update_layout(**MY_LAYOUT)
     fig.show()
-    fig.write_image(f"{prob} stopping criterion.png".replace(" ", "_")lower(), scale=WRITE_SCALE)
+    fig.write_image(f"{prob} stopping criterion.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
     fig_description = f"Solving the {prob} with the CBREE method using  \
 different parameters.\
 We vary the stopping criterion $\\Delta_{{\\text{{Target}}}}$ (color), \
