@@ -4,6 +4,9 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dir", type=str, default="docs/benchmarking/data/sis_sim_diffusion")
+parser.add_argument("--counter",
+                    type=int,
+                    default=0)
 
 args = parser.parse_args()
 
