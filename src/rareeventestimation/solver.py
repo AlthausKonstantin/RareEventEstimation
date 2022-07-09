@@ -609,15 +609,18 @@ class CBREE(Solver):
         # Check convergence
         if self.sigma_adaptivity == "cvar":
             cache_list[-1].converged = (cache_list[-1].cvar_is_weights <= self.cvar_tgt) and self.convergence_check
-            cache_list[1].msg += "Converged with given `cvar_tgt`."
+            if cache_list[-1].converged:
+                cache_list[-1].msg += "Converged with given `cvar_tgt`."
             if self.divergence_check and iteration >= self.observation_window:
                 sfp_mean = average([c.sfp for c in cache_list[-self.observation_window:]])
                 cache_list[-1].converged = cache_list[-1].converged or (cache_list[-1].slope_cvar > 0.0 and sfp_mean>=self.sfp_tgt)
-                cache_list[1].msg += "Converged due to `divergence_check`."
+                if cache_list[-1].converged:
+                    cache_list[-1].msg += "Converged due to `divergence_check`."
 
         if self.sigma_adaptivity == "sfp":
             cache_list[-1].converged = (cache_list[-1].sfp >= self.sfp_tgt)  and self.convergence_check
-            cache_list[1].msg += "Converged with given `sfp_tgt`."      
+            if cache_list[-1].converged:
+                cache_list[-1].msg += "Converged with given `sfp_tgt`."      
     
     def __update_stepsize(self, cache_list:list) -> None:
         """Compute new stepsize, save it in `cache_list[-1].t_step`.
@@ -851,6 +854,10 @@ class ENKF(Solver):
         self.num_comps = kwargs.get("num_comps", 1)
         self.localize = kwargs.get("localize", False)
         self.seed = kwargs.get("seed", None)
+    
+    def __str__(self) -> str:
+        """Return abbreviated name of method."""
+        return f"EnKF ({self.mixture_model})"
  
     def solve(self, prob:Problem):
         """Estimate the rare event of `prob`.

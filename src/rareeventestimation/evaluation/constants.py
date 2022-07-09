@@ -45,11 +45,11 @@ BM_SOLVER_SCATTER_STYLE = {
         "marker_color": CMAP[1]},
     "SiS (GM)":{
         "line_dash": "dot",
-        "marker_symbol": "square",
+        "marker_symbol": "diamond",
         "marker_color": CMAP[1]},
     "SiS (aCS)":{
         "line_dash": "dot",
-        "marker_symbol": "square",
+        "marker_symbol": "diamond",
         "marker_color": CMAP[1]},
     
 }
@@ -65,6 +65,6 @@ DF_COLUMNS_TO_LATEX = {
 LATEX_TO_HTML = {
     "$\\epsilon_{{\\text{{Target}}}}$": "<i>\u03B5</i><sub>Target</sub>" ,
     "$\\Delta_{{\\text{{Target}}}}$": "\u0394<sub>Target</sub>",
-   "Lip$(\\sigma)$": "Lip(\u03C3)",
+    "Lip$(\\sigma)$": "Lip(\u03C3)",
     "$N_{{ \\text{{obs}} }}$":"<i>N</i><sub>obs</sub>",
     "IS Density": "<i> \u03BC<sup>N</sup></i>"}

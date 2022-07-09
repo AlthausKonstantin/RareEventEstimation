@@ -164,13 +164,11 @@ def make_mse_plots(df:pd.DataFrame, save_to_resp_path=True) ->dict:
 
 
         
-        
-
-
 def get_color(colorscale_name, loc):
     from _plotly_utils.basevalidators import ColorscaleValidator
     # first parameter: Name of the property being validated
     # second parameter: a string, doesn't really matter in our use case
+    # kudos: https://stackoverflow.com/a/67912302
     cv = ColorscaleValidator("colorscale", "")
     # colorscale will be a list of lists: [[loc1, "rgb1"], [loc2, "rgb2"], ...] 
     colorscale = cv.validate_coerce(colorscale_name)
@@ -179,9 +177,6 @@ def get_color(colorscale_name, loc):
         return [get_continuous_color(colorscale, x) for x in loc]
     return get_continuous_color(colorscale, loc)
         
-
-# Identical to Adam's answer
-
 
 def get_continuous_color(colorscale, intermed):
     """
@@ -202,6 +197,8 @@ def get_continuous_color(colorscale, intermed):
     :param intermed: value in the range [0, 1]
     :return: color in rgb string format
     :rtype: str
+    
+    kudos: https://stackoverflow.com/a/67912302
     """
     if len(colorscale) < 1:
         raise ValueError("colorscale must have at least one color")
@@ -278,9 +275,6 @@ def add_scatter_to_subplots(fig, num_rows, num_cols, **scatter_kwargs):
             first=False
     return fig
     
-    
-    
-    
 def make_rel_error_plot(self, prob: Problem, **kwargs):
     """
     Make a plot of the relative error of estimated probability of failure.
@@ -314,19 +308,20 @@ def make_rel_error_plot(self, prob: Problem, **kwargs):
 
     return fig
 
-def plot_iteration(self, iter: int, prob: Problem, delta=1):
+def plot_iteration(iter: int, prob: Problem, sol:Solution=None, delta=1) -> Figure:
         """Make a plot of iteration `iter`.
+ 
 
         Args:
+            iter (int): Which iteration shall be plotted.
+            sol (optional, Solution): solution with info about all iterations.
             prob (Problem): Instance of Problem class.
             delta (optional[float]): stepsize for contour plot.
 
         Returns:
             [plotly.graph_objs._figure.Figure]: Plotly figure plot.
-        """
-        bb = self.temp_hist.squeeze()
-        ss = self.other["Sigma"].squeeze()
-        iter = maximum(0, minimum(iter, self.num_steps-2))
+        """       
+        iter = maximum(0, minimum(iter, s))
         # # Make evaluations for contour plot
         x_limits = [min(self.ensemble_hist[:, :, 0])-3,
                     max(self.ensemble_hist[:, :, 0])+3]
@@ -335,23 +330,18 @@ def plot_iteration(self, iter: int, prob: Problem, delta=1):
         xx = arange(*x_limits, step=delta)
         yy = arange(*y_limits, step=delta)
         # y is first as rows are stacked vertically
-        zz_tgt = zeros((len(yy), len(xx)))
         zz_lsf = zeros((len(yy), len(xx)))
         for (xi, x) in enumerate(xx):
             for(yi, y) in enumerate(yy):
                 z = array([x, y])
                 zz_lsf[yi, xi] = prob.lsf(z)
-                zz_tgt[yi, xi] = self.tgt_fun(prob.lsf(z),prob.e_fun(z),sigma=ss[iter]) ** bb[iter]
-
 
         #  Make contour plot of limit state function
         col_scale = [[0, "salmon"], [1, "white"]]
         contour_style = {"start": 0, "end": 0, "size": 0, "showlabels": True}
         c_lsf = Contour(z=zz_lsf, x=xx, y=yy, colorscale=col_scale,
                           contours=contour_style, line_width=2, showscale=False)
-        #  Make contour plot for target function
-        c_tgt = Contour(z=zz_tgt, x=xx, y=yy, contours_coloring='lines', showscale=False)
-        # Make frames for animation
+        # Plot ensemble
         s = Scatter(x=self.ensemble_hist[iter, :, 0], y=self.ensemble_hist[iter, :, 1],
                        mode="markers")
         l = Layout(title="Iteration " + str(iter))
