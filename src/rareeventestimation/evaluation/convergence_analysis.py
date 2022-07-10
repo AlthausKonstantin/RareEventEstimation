@@ -87,11 +87,14 @@ def do_multiple_solves(prob:Problem,
             if other_list is not None:
                 for c in other_list:
                     df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
-                    df[c] = df[c].map(list)
+                    try:
+                        df[c] = df[c].map(list)
+                    except TypeError:
+                        if not(isinstance(df[c].values[0], Real) or isinstance(df[c].values[0], str)):
+                            print(f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
         if addtnl_cols is not None:
             for k,v in addtnl_cols.items():
                 df[k]=v
-                
         # save
         df.to_csv(file_name, mode="a", header=write_header, index=False)
         write_header=False
@@ -171,7 +174,11 @@ def study_cbree_observation_window(prob:Problem,
                 if other_list is not None:
                     for c in other_list:
                         df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
-                        df[c] = df[c].map(list)
+                        try:
+                            df[c] = df[c].map(list)
+                        except TypeError:
+                            if not(isinstance(df[c].values[0], Real) or isinstance(df[c].values[0], str)):
+                                print(f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
             if addtnl_cols is not None:
                 for k,v in addtnl_cols.items():
                     df[k]=v
@@ -218,7 +225,11 @@ def study_cbree_observation_window(prob:Problem,
                         if other_list is not None:
                             for c in other_list:
                                 df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
-                                df[c] = df[c].map(list)
+                                try:
+                                    df[c] = df[c].map(list)
+                                except TypeError:
+                                    if not(isinstance(df[c].values[0], Real) or isinstance(df[c].values[0], str)):
+                                        print(f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
                     if addtnl_cols is not None:
                         for k,v in addtnl_cols.items():
                             df[k]=v
@@ -232,8 +243,8 @@ def study_cbree_observation_window(prob:Problem,
                 estimtates[i]  = solution.prob_fail_hist[-1]
                 relRootMSE = sqrt(average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
                 print("Rel. Root MSE after " +  str(i+1) + "/" +str(num_runs) + " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
-        except Exception as a:
-            pass
+        except Exception as e:
+            print(e)
          
     return file_name
    
