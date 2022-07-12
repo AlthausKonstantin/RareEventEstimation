@@ -6,7 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dir", type=str, default="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/cbree_sim/toy_problems")
 parser.add_argument("--counter",
                     type=int,
-                    default=0)
+                    default=300)
 args = parser.parse_args()
 
 

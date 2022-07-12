@@ -1,18 +1,14 @@
 #%% 
-from genericpath import exists
-from glob import glob
+
 from numbers import Real
-from os import listdir, path
-import scipy as sp
+from os import path
 import rareeventestimation as ree
 import numpy as np
 import scipy as sp
-import sympy as smp
 import pandas as pd
 import plotly.express as px
 from rareeventestimation.evaluation.constants import INDICATOR_APPROX_LATEX_NAME, BM_SOLVER_SCATTER_STYLE, MY_LAYOUT, DF_COLUMNS_TO_LATEX, LATEX_TO_HTML, WRITE_SCALE
 import plotly.graph_objects as go
-from get_benchmark_df import get_benchmark_df
 from rareeventestimation.evaluation.visualization import add_scatter_to_subplots, sr_to_color_dict
 import re
 %load_ext autoreload
@@ -23,7 +19,7 @@ import re
 data_dir ="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data/cbree_sim/toy_problems"
 path_df= path.join(data_dir, "cbree_toy_problems_processed.pkl")
 path_df_agg = path.join(data_dir, "cbree_toy_problems_aggregated.pkl")
-if (path.exists(path_df) and path.exists(path_df_agg)):
+if  (path.exists(path_df) and path.exists(path_df_agg)):
     df = ree.load_data(data_dir, "*")
     df.drop(columns=["index", "Unnamed: 0"], inplace=True)
     df.drop_duplicates(inplace=True)
@@ -40,7 +36,7 @@ if (path.exists(path_df) and path.exists(path_df_agg)):
     df = df.apply(expand_cbree_name, axis=1, columns= ['observation_window', 'callback'])
     # %% Pretty names
     to_drop = ["mixture_model"] # info is redundant as resample = False and callback exists
-    replace_values = {"IS Density": {"False": "GM", "vMFNM Resample": "vMFNM (Resampled)"}}
+    replace_values = {"Method": {"False": "CBREE (GM)", "vMFNM Resample": "CBREE (vMFNM)"}}
     df = df.drop(columns=to_drop) \
         .rename(columns=DF_COLUMNS_TO_LATEX) \
         .replace(replace_values)
@@ -61,7 +57,7 @@ if (path.exists(path_df) and path.exists(path_df_agg)):
 else:
     df = pd.read_pickle(path_df)
     df_agg = pd.read_pickle(path_df_agg)
-df_bm, df_bm_agg = get_benchmark_df()
+df_bm, df_bm_agg = ree.get_benchmark_df()
 
 # %% Make table with used parameters
 def my_number_formatter(x:Real) -> str:
@@ -89,35 +85,45 @@ tbl_params
 # %% Decide which indicator approximation is better
 def decide(grp,par):
     best = grp.sort_values("Relative Root MSE")[par].values[0]
-    return(pd.Series([best], index =[f"Best {par}"]))
-df_tgt_fun = df_agg.loc[:,("Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "IS Density", "Smoothing Function", "Relative Root MSE", "$N_{{ \\text{{obs}} }}$")] \
-    .groupby(["Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "IS Density", "$N_{{ \\text{{obs}} }}$"]) \
-    .apply(decide, "Smoothing Function") \
-    .loc[:,"Best Smoothing Function"] 
-    
-tbl = df_tgt_fun.value_counts() / len(df_tgt_fun)
-best_approximation = tbl.idxmax()
-tbl = tbl.apply(lambda x: f"{x*100:.2f}\%")
-tbl = tbl.to_frame(name="Relative Frequency")
-tbl.index.name = "Approximation"
+    return(pd.Series([best], index =[f"{par}"]))
+df_tgt_fun = df_agg.loc[:,("Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "Smoothing Function", "Relative Root MSE", "$N_{{ \\text{{obs}} }}$", "$\\epsilon_{{\\text{{Target}}}}$")] \
+    .groupby(["Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "$N_{{ \\text{{obs}} }}$", "$\\epsilon_{{\\text{{Target}}}}$"]) \
+    .apply(decide, "Smoothing Function") 
+tbl = df_tgt_fun.reset_index().value_counts(subset=["Smoothing Function", "Problem"], normalize=False)\
+    .to_frame()\
+    .unstack(level=1)
+tbl.columns = tbl.columns.droplevel(0)
+totals = tbl.sum()
+tbl = tbl/totals
+tbl["Total"] = tbl.mean(numeric_only=True, axis=1)
+tbl = tbl.applymap(lambda x: f"{x*100:.2f}\%")
 tbl = tbl.rename(index = INDICATOR_APPROX_LATEX_NAME)
+tbl = tbl.rename(columns={c:'\\rotatebox{60}{' + c + '}' for c in tbl.columns})
 tbl.style.to_latex("performance_approximations.tex", clines="all;data")
+tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different smoothing functions averaged over  all other parameter choices. The values denote the relative number of cases (total {int(totals[0])}) the corresponding smoothing function performed best for the given problem."
+with open(f"performance_approximations_desc.tex", "w") as file:
+    file.write(tbl_description)
+print(tbl_description)
 tbl
 
 # %% Decide which stepsize tolerance is better
-df_tgt_fun = df_agg.loc[:,("Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "IS Density", "$\\epsilon_{{\\text{{Target}}}}$", "Relative Root MSE", "$N_{{ \\text{{obs}} }}$")] \
-    .groupby(["Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "IS Density", "$N_{{ \\text{{obs}} }}$"]) \
-    .apply(decide,  "$\\epsilon_{{\\text{{Target}}}}$") \
-    .loc[:,"Best $\\epsilon_{{\\text{{Target}}}}$"] 
-    
-tbl = df_tgt_fun.value_counts() / len(df_tgt_fun)
-best_tolerance = tbl.idxmax()
-tbl = tbl.apply(lambda x: f"{x*100:.2f}\%")
-tbl = tbl.to_frame(name="Relative Frequency")
-tbl.index.name = "$\\epsilon_{{\\text{{Target}}}}$"
+df_tol = df_agg.loc[:,("Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "$\\epsilon_{{\\text{{Target}}}}$", "Relative Root MSE", "$N_{{ \\text{{obs}} }}$","Smoothing Function")] \
+    .groupby(["Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "$N_{{ \\text{{obs}} }}$", "Smoothing Function"]) \
+    .apply(decide,  "$\\epsilon_{{\\text{{Target}}}}$")     
+tbl = df_tol.reset_index().value_counts(subset=["$\\epsilon_{{\\text{{Target}}}}$", "Problem"], normalize=False)\
+    .unstack(level=1)
+totals = tbl.sum()
+tbl = tbl/totals
+tbl["Total"] = tbl.mean(numeric_only=True, axis=1)
+tbl = tbl.applymap(lambda x: f"{x*100:.2f}\%")
+tbl = tbl.rename(columns={c:'\\rotatebox{60}{' + c + '}' for c in tbl.columns}).\
+    rename(index={idx:str(idx) for idx in tbl.index })
 tbl.style.to_latex("performance_stepsize_tolerance.tex", clines="all;data")
+tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different values of $\\epsilon_{{\\text{{Target}}}}$ averaged over  all other parameter choices. The values denote the relative number of cases (total {int(totals[0])}) the corresponding value performed best for the given problem."
+with open(f"performance_stepsize_tolerance_desc.tex", "w") as file:
+    file.write(tbl_description)
+print(tbl_description)
 tbl
-
 
 
 #%% make plots
@@ -137,7 +143,7 @@ for prob in ["Convex Problem", "Linear Problem (d=2)", "Fujita Rackwitz (d=2)", 
         this_df,
         x = "Relative Root MSE",
         y="Cost Mean",
-        facet_col="IS Density",
+        facet_col="Method",
         facet_row="$N_{{ \\text{{obs}} }}$",
         color_discrete_map=cmap,
         color="cvar_tgt_str",
@@ -149,7 +155,7 @@ for prob in ["Convex Problem", "Linear Problem (d=2)", "Fujita Rackwitz (d=2)", 
     )
     
     num_rows = len(this_df["$N_{{ \\text{{obs}} }}$"].unique())
-    num_cols = len(this_df["IS Density"].unique())
+    num_cols = len(this_df["Method"].unique())
     for bm_solver in this_df_bm.Solver.unique():
         dat =this_df_bm.query("Solver == @bm_solver")
         # nice name
@@ -171,7 +177,7 @@ for prob in ["Convex Problem", "Linear Problem (d=2)", "Fujita Rackwitz (d=2)", 
     fig.show()
     fig.write_image(f"{prob} stopping criterion.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
     fig_description = f"Solving the {prob} with the CBREE method using  \
-different parameters.\
+different parameters. \
 We vary the stopping criterion $\\Delta_{{\\text{{Target}}}}$ (color), \
 the divergence criterion $N_\\text{{obs}}$ (row) and \
 the importance sampling density $\\mu^N$ (column). \

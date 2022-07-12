@@ -5,7 +5,6 @@ from copy import deepcopy
 from glob import glob
 from logging import warning
 from numbers import Real
-import tempfile
 from numpy import asarray, average, concatenate, float64, ndarray, sqrt, zeros, var, nan, stack
 from scipy.fftpack import cc_diff
 from scipy.stats import variation
@@ -16,8 +15,6 @@ from numpy.random import default_rng
 import pandas as pd
 from os import path
 import gc
-import hashlib
-import time
 from tempfile import NamedTemporaryFile
 
 def do_multiple_solves(prob:Problem,
@@ -182,6 +179,7 @@ def study_cbree_observation_window(prob:Problem,
             if addtnl_cols is not None:
                 for k,v in addtnl_cols.items():
                     df[k]=v
+            df["divergence_check"]=False
             df["observation_window"]=0
             df["callback"]= solver.callback is not None
             df.to_csv(file_name, mode="a", header=write_header)
@@ -233,7 +231,8 @@ def study_cbree_observation_window(prob:Problem,
                     if addtnl_cols is not None:
                         for k,v in addtnl_cols.items():
                             df[k]=v
-                    df["observation_window"]=win_len       
+                    df["observation_window"]=win_len
+                    df["divergence_check"]=True       
                     df["callback"] = callback_name
                     # save
                     df.to_csv(file_name, mode="a", header=False)
@@ -381,3 +380,74 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
     df_agg.reset_index(inplace=True)
     return df_agg
 
+def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/enkf_sim",
+                                  "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/sis_sim"},
+                     df_dir = "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data",
+                     df_names ={"df": "benchmark_toy_problems_processed.pkl",
+                                "df_agg": "benchmark_toy_problems_aggregated.pkl"})-> tuple:
+    """Custom function to load benchmark simultions.
+
+    Args:
+        data_dirs (dict, optional): Paths to simulations. Defaults to {"enkf":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/enkf_sim", "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/sis_sim"}.
+        df_dir (str, optional): Look here for pickled results before loading. Defaults to "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data".
+
+    Returns:
+        tuple: (dataset, aggregated dataset)
+    """    
+    path_df= path.join(df_dir, df_names["df"])
+    path_df_agg = path.join(df_dir, df_names["df_agg"])
+    if not (path.exists(path_df) and path.exists(path_df_agg)):
+        # load dfs
+        df = None
+        df_agg = None
+        for method, data_dir in data_dirs.items():
+            this_df = load_data(data_dir, "*")
+            this_df.drop(columns=["index", "Unnamed: 0"], inplace=True, errors="ignore")
+            this_df.drop_duplicates(inplace=True)
+            this_df = this_df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
+            this_df = add_evaluations(this_df)
+            this_df_agg = aggregate_df(this_df)
+            if df is None:
+                df = this_df
+            else:
+                df = pd.concat([df, this_df],ignore_index=True)
+            if df_agg is None:
+                df_agg = this_df_agg
+            else:
+                df_agg = pd.concat([df_agg, this_df_agg],ignore_index=True)
+        df.to_pickle(path_df)
+        df_agg.to_pickle(path_df_agg)
+    else:
+        df = pd.read_pickle(path_df)
+        df_agg = pd.read_pickle(path_df_agg)
+    return df, df_agg
+
+def force_bm_names(row:pd.Series, name= "Solver", specification="mixture_model") -> pd.Series:
+    """Rename bechmark solvers from entries `name` and `specification` in `row`.
+
+    Args:
+        row (pd.Series): Row of a benchmark dataframe
+        name (str, optional): Look in this column for the base name. Defaults to "Solver".
+        specification (str, optional): Look in this column for any specifications. Defaults to "mixture_model".
+
+    Returns:
+        pd.Series: `row` with changed entry at `name`.
+    """
+    old_name = row[name]
+    new_name = old_name
+    if "enkf" in old_name.lower():
+        new_name = "EnKF"
+    if "sis" in old_name.lower():
+        new_name = "SIS"
+    my_specs = {
+        "vmfnm": " (vMFNM)",
+        "gm": " (GM)",
+        "acs": " (aCS)"
+    }
+    for pattern, spec in my_specs.items():
+        if pattern in row[name].lower() or pattern in row[specification].lower():
+            new_name += spec
+    row[name] = new_name
+    return row
+        
+        

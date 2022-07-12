@@ -43,11 +43,11 @@ BM_SOLVER_SCATTER_STYLE = {
         "line_dash": "dash",
         "marker_symbol": "square",
         "marker_color": CMAP[1]},
-    "SiS (GM)":{
+    "SIS (GM)":{
         "line_dash": "dot",
         "marker_symbol": "diamond",
         "marker_color": CMAP[1]},
-    "SiS (aCS)":{
+    "SIS (aCS)":{
         "line_dash": "dot",
         "marker_symbol": "diamond",
         "marker_color": CMAP[1]},
@@ -61,7 +61,7 @@ DF_COLUMNS_TO_LATEX = {
         "lip_sigma": "Lip$(\\sigma)$",
         "tgt_fun": "Smoothing Function",
         "observation_window": "$N_{{ \\text{{obs}} }}$",
-        "callback": "IS Density"}
+        "callback": "Method"}
 LATEX_TO_HTML = {
     "$\\epsilon_{{\\text{{Target}}}}$": "<i>\u03B5</i><sub>Target</sub>" ,
     "$\\Delta_{{\\text{{Target}}}}$": "\u0394<sub>Target</sub>",

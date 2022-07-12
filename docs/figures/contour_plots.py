@@ -67,12 +67,12 @@ for i, prob in enumerate(problem_list):
                        text="{<i>G</i> > 0}")
     figs.append(fig)
     fig.show()
-    fig.write_image(f"{prob} scatter plot.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
-    fig_description = f"Contour plot of the {prob}.\
-Also the final ensemble of the CBREE, SiS and EnKF methods respectively is plotted. \
-Each method used $J=1000$ samples and the stopping criterion $\\Delta_{{\\text{{Target}}}}$ = {cvar_tgt}.
-The CBREE method performed no divergence check, used the approximation $I_\\text{{alg}}$, the stepsize control $\\epsilon{{\\text{{Target}}}}=0.5$ and controled the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = 1$"
-    with open(f"{prob} scatter plot desc.tex".replace(" ", "_").lower(), "w") as file:
+    fig.write_image(f"{prob.name} scatter plot.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
+    fig_description = f"Contour plot of the {prob.name}. \
+Also the final ensembles of the CBREE, SiS and EnKF methods respectively are plotted. \
+Each method uses $J=1000$ samples and the stopping criterion $\\Delta_{{\\text{{Target}}}}$ = {cvar_tgt}. \
+The CBREE method performed no divergence check, used the approximation $I_\\text{{alg}}$, the stepsize control $\\epsilon_{{\\text{{Target}}}}=0.5$ and controled the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = 1$."
+    with open(f"{prob.name} scatter plot desc.tex".replace(" ", "_").lower(), "w") as file:
         file.write(fig_description)
     print(fig_description)
 # %%

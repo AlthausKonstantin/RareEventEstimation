@@ -32,7 +32,7 @@ def make_fujita_rackwitz(d,pf=1e-04):
     def lsf(x): return -sum(log(norm.cdf(-x)),axis=-1) -c
     pf = gamma.cdf(c,d)
     mpp = -norm.ppf(exp(-c/d))*ones(d) 
-    prob = NormalProblem(lsf,d,1,pf,name=f"Fujita Rackwitz (d={d})", mpp=mpp)
+    prob = NormalProblem(lsf,d,1,pf,name=f"Fujita Rackwitz Problem (d={d})", mpp=mpp)
     prob.matlab_str = f"@(x) -sum(log(normcdf(-x))) - {c}"
     return prob
 

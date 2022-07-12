@@ -55,11 +55,11 @@ for tgt in df.cvar_tgt.unique():
             "Not Converged.":"Not Converged",
             "attempt to get argmax of an empty sequence": "No finite weights $\\bm{{w}}^n$",
             "singular matrix":"Singular $c^n$"}, index=INDICATOR_APPROX_LATEX_NAME)  
-    tbl.style.to_latex(f"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Latex/figures/success_rates_tgt_{tgt}.tex",
+    tbl.style.to_latex(f"success_rates_tgt_{tgt}.tex",
                        multirow_align="naive",
                        column_format="ccrRP",
                        clines="skip-last;data")
-    with open(f"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Latex/figures/success_rates_tgt_{tgt}_desc.tex", "w") as file:
+    with open(f"success_rates_tgt_{tgt}_desc.tex", "w") as file:
         file.write(f"Exit Messages of unsuccessful runs with stopping criterion $\\Delta_{{\\text{{Target}}}} = {tgt}$. Values are proportional to 200 sample runs.")
 tbl
 # %% for different cvar_tgt and success rates (==100%, < 100%) rang tgt_funs by accuracy
@@ -82,9 +82,9 @@ for cvar_tgt in df.cvar_tgt.unique():
             df_acc = df_acc.rename(columns=INDICATOR_APPROX_LATEX_NAME)
             df_acc.columns.name="Approximation"
             tbl = df_acc.style.format(precision=2)
-            tbl.to_latex(f"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Latex/figures/accuracy_tgt_{cvar_tgt}{'_success_only' if op=='==' else '' }.tex",
+            tbl.to_latex(f"accuracy_tgt_{cvar_tgt}{'_success_only' if op=='==' else '' }.tex",
                         clines="all;data")
-            with open(f"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Latex/figures/accuracy_tgt_{cvar_tgt}{'_success_only' if op=='==' else '' }_desc.tex", "w") as file:
-                file.write(f"Relative root mean squared error of {'successful runs with indicator function approximations that always led to convergence' if op=='==' else 'successful runs with indicator function approximations that have not always converged'} using the stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$")
+            with open(f"accuracy_tgt_{cvar_tgt}{'_success_only' if op=='==' else '' }_desc.tex", "w") as file:
+                file.write(f"Relative root mean squared error of {'successful runs with indicator function approximations that always led to convergence' if op=='==' else 'successful runs with indicator function approximations that have not always converged'} using the stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$.")
         
 # %%
