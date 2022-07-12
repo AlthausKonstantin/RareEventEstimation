@@ -1,16 +1,17 @@
+#%%
 import rareeventestimation as ree
 import numpy as np
-import argparse
+# import argparse
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--dir",
-                    type=str,
-                    default="docs/benchmarking/data/sis_sim/")
-parser.add_argument("--counter",
-                    type=int,
-                    default=0)
+# parser = argparse.ArgumentParser()
+# parser.add_argument("--dir",
+#                     type=str,
+#                     default="docs/benchmarking/data/sis_sim/")
+# parser.add_argument("--counter",
+#                     type=int,
+#                     default=30)
 
-args = parser.parse_args()
+# args = parser.parse_args()
 
 
 # Set up solvers
@@ -57,17 +58,21 @@ def main():
     for i, solver in enumerate(solver_list):
         for problem in problem_list:
             for s in sample_sizes:
-                if counter > args.counter:
+                if counter > 30:#args.counter:
                     print(f"({counter}/{total}) {problem.name}, {s} Samples, with {solver.name}")
                     problem.set_sample(s, seed=s)
                     ree.do_multiple_solves(problem,
                                     solver,
                                     num_runs,
-                                    dir=args.dir,
+                                    dir="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/sis_sim",#args.dir,
                                     prefix=f"{problem.name} {counter} ".replace(" ", "_"),
                                     save_other=True,
                                     addtnl_cols=kwarg_list[i])
+                    
                 counter += 1
 
-if __name__ == "__main__":
-   main()
+# if __name__ == "__main__":
+#    main()
+# %%
+main()
+# %%
