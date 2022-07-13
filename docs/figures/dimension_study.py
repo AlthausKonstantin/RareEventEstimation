@@ -1,6 +1,4 @@
 #%% 
-from glob import glob
-import scipy as sp
 from re import sub
 from sympy import solve
 import rareeventestimation as ree
@@ -13,7 +11,7 @@ import plotly.graph_objects as go
 
 # %% set up
 dim_list = np.arange(10, 160, 10)
-J=2500
+J=5000
 num_runs=50
 
 def callback_vmfnm(cache, solver):

@@ -231,8 +231,8 @@ def study_cbree_observation_window(prob:Problem,
                     if addtnl_cols is not None:
                         for k,v in addtnl_cols.items():
                             df[k]=v
+                    df["divergence_check"]=True    
                     df["observation_window"]=win_len
-                    df["divergence_check"]=True       
                     df["callback"] = callback_name
                     # save
                     df.to_csv(file_name, mode="a", header=False)
@@ -263,7 +263,21 @@ def load_data(pth:str, pattern:str ,recursive=True, kwargs={}) -> pd.DataFrame:
         pd.DataFrame: All solution files in `dir`.
     """
     files = glob(path.join(pth, pattern+".csv"), recursive=recursive)
-    df = pd.concat([pd.read_csv(f, **kwargs) for f in files],ignore_index=True)
+    # Hotfix for mixed up columns :(
+    df_list = [pd.read_csv(f, **kwargs) for f in files]
+    for i, df in enumerate(df_list):
+        if all([c in df.columns for c in ["divergence_check","observation_window"]]):
+            if "True" in df["observation_window"].values:
+                df = df.rename(columns={"divergence_check":"1","observation_window":"2"})
+                df = df.rename(columns={"1":"observation_window", "2":"divergence_check"})
+                df_list[i] =df.replace(
+                    {"divergence_check":{"True":True, "0":False},
+                    "observation_window":{"False":0, "2":2, "5": 5, "10":10}})
+        replace
+    df = pd.concat(df_list,ignore_index=True)
+    # hotfix for missnamed problems :(
+    df = df.replace({"Problem": {"Fujita Rackwitz (d=2)": "Fujita Rackwitz Problem (d=2)",
+                                "Fujita Rackwitz (d=50)": "Fujita Rackwitz Problem (d=50)"}})
     df.drop_duplicates(inplace=True)
     df.reset_index(inplace=True)
     # Now find all columns containing arrays (as strings) and transform 'em
@@ -380,9 +394,9 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
     df_agg.reset_index(inplace=True)
     return df_agg
 
-def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/enkf_sim",
-                                  "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/sis_sim"},
-                     df_dir = "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data",
+def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie/enkf_sim",
+                                  "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie/sis_sim"},
+                     df_dir = "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie",
                      df_names ={"df": "benchmark_toy_problems_processed.pkl",
                                 "df_agg": "benchmark_toy_problems_aggregated.pkl"})-> tuple:
     """Custom function to load benchmark simultions.
@@ -404,7 +418,6 @@ def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Mas
             this_df = load_data(data_dir, "*")
             this_df.drop(columns=["index", "Unnamed: 0"], inplace=True, errors="ignore")
             this_df.drop_duplicates(inplace=True)
-            this_df = this_df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
             this_df = add_evaluations(this_df)
             this_df_agg = aggregate_df(this_df)
             if df is None:
@@ -415,7 +428,9 @@ def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Mas
                 df_agg = this_df_agg
             else:
                 df_agg = pd.concat([df_agg, this_df_agg],ignore_index=True)
+        df = df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
         df.to_pickle(path_df)
+        df_agg = df_agg.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
         df_agg.to_pickle(path_df_agg)
     else:
         df = pd.read_pickle(path_df)
