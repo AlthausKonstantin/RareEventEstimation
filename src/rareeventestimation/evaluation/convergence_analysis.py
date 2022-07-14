@@ -273,7 +273,6 @@ def load_data(pth:str, pattern:str ,recursive=True, kwargs={}) -> pd.DataFrame:
                 df_list[i] =df.replace(
                     {"divergence_check":{"True":True, "0":False},
                     "observation_window":{"False":0, "2":2, "5": 5, "10":10}})
-        replace
     df = pd.concat(df_list,ignore_index=True)
     # hotfix for missnamed problems :(
     df = df.replace({"Problem": {"Fujita Rackwitz (d=2)": "Fujita Rackwitz Problem (d=2)",
