@@ -7,10 +7,12 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 import plotly.express as px
-from rareeventestimation.evaluation.constants import INDICATOR_APPROX_LATEX_NAME, BM_SOLVER_SCATTER_STYLE, MY_LAYOUT, DF_COLUMNS_TO_LATEX, LATEX_TO_HTML, WRITE_SCALE
+from rareeventestimation.evaluation.constants import INDICATOR_APPROX_LATEX_NAME, BM_SOLVER_SCATTER_STYLE, MY_LAYOUT, DF_COLUMNS_TO_LATEX, LATEX_TO_HTML, WRITE_SCALE, CMAP
 import plotly.graph_objects as go
 from rareeventestimation.evaluation.visualization import add_scatter_to_subplots, sr_to_color_dict
+from rareeventestimation.evaluation.convergence_analysis import expand_cbree_name, list_to_latex, my_number_formatter, vec_to_latex_set, squeeze_problem_names
 import re
+
 %load_ext autoreload
 %autoreload 2
 
@@ -20,7 +22,7 @@ data_dir ="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/ra
 path_df= path.join(data_dir, "cbree_toy_problems_processed.pkl")
 path_df_agg = path.join(data_dir, "cbree_toy_problems_aggregated.pkl")
 path_df_agg_all = path.join(data_dir, "cbree_toy_problems_aggregated_all.pkl")
-if   (path.exists(path_df) and path.exists(path_df_agg)):
+if not  (path.exists(path_df) and path.exists(path_df_agg) and path.exists(path_df_agg_all)):
     df = ree.load_data(data_dir, "*")
     df.drop(columns=["index", "Unnamed: 0"], inplace=True)
     df.drop_duplicates(inplace=True)
@@ -30,14 +32,11 @@ if   (path.exists(path_df) and path.exists(path_df_agg)):
         if isinstance(df[col].values[0], float):
             df[col] = df[col].round(5)
     #%%process data: add obs_window and callback to solver name
-    def expand_cbree_name(input, columns=[]) -> str:
-        for col in columns:
-            input.Solver = input.Solver.replace("}", f", '{col}': '{input[col]}'}}")
-        return input
+    
     df = df.apply(expand_cbree_name, axis=1, columns= ['observation_window', 'callback'])
     # %% Pretty names
     to_drop = ["mixture_model"] # info is redundant as resample = False and callback exists
-    replace_values = {"Method": {"False": "CBREE (GM)", "vMFNM Resample": "CBREE (vMFNM)"}}
+    replace_values = {"Method": {"False": "CBREE", "vMFNM Resample": "CBREE (vMFNM)"}}
     df = df.drop(columns=to_drop) \
         .rename(columns=DF_COLUMNS_TO_LATEX) \
         .replace(replace_values)
@@ -57,7 +56,7 @@ if   (path.exists(path_df) and path.exists(path_df_agg)):
     #%% save
     df_success.to_pickle(path_df)
     df_agg.to_pickle(path_df_agg)
-    df_agg_all.to_pickle(path_df_agg_all)
+    image.png.to_pickle(path_df_agg_all)
 else:
     df_success = pd.read_pickle(path_df)
     df_agg = pd.read_pickle(path_df_agg)
@@ -65,22 +64,12 @@ else:
 #%%
 df_bm, df_bm_agg = ree.get_benchmark_df()
 # %% Filter for lowdim stuff
-low_dim_probs= ["Convex Problem", "Linear Problem (d=2)", "Fujita Rackwitz (d=2)"]
+low_dim_probs= ["Convex Problem", "Linear Problem (d=2)", "Fujita Rackwitz Problem (d=2)"]
 
 # %% Make table with used parameters
-def my_number_formatter(x:Real) -> str:
-    if int(x)==x:
-        return str(int(x))
-    else:
-        return f"{x:.2f}"
-    
-def list_to_latex(ls:list) -> str:
-    if np.all(np.array([isinstance(v, Real) for v in ls])):
-        return f"$\\{{ {', '.join(map(my_number_formatter, ls))} \\}}$"
-    else:
-         return f"{', '.join(ls)}"
+
      
-paras = ["Sample Size"] + list(DF_COLUMNS_TO_LATEX.values())
+paras = ["Sample Size"] + [v for v in DF_COLUMNS_TO_LATEX.values() if v!= "Method"]
 tbl_params = df_agg.loc[:, tuple(paras)] \
     .replace({"Smoothing Function": INDICATOR_APPROX_LATEX_NAME}) \
     .apply(lambda col: col.sort_values().unique()) \
@@ -109,7 +98,7 @@ tbl = tbl.sort_values("Total", ascending=False)
 best_approximation = tbl.index.values[0]
 tbl = tbl.applymap(lambda x: f"{x*100:.2f}\%")
 tbl = tbl.rename(index = INDICATOR_APPROX_LATEX_NAME)
-tbl = tbl.rename(columns={c:'\\rotatebox{60}{' + c + '}' for c in tbl.columns})
+tbl = tbl.rename(columns={c:squeeze_problem_names(c) for c in tbl.columns})
 tbl.style.to_latex("performance_approximations.tex", clines="all;data")
 tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different smoothing functions averaged over  all other parameter choices. The values denote the relative number of cases the corresponding smoothing function performed best for the given problem ({int(totals[0])} per problem)."
 with open(f"performance_approximations_desc.tex", "w") as file:
@@ -130,7 +119,7 @@ tbl["Total"] = tbl.mean(numeric_only=True, axis=1)
 tbl = tbl.sort_values("Total", ascending=False)
 best_tolerance = tbl.index.values[0]
 tbl = tbl.applymap(lambda x: f"{x*100:.2f}\%")
-tbl = tbl.rename(columns={c:'\\rotatebox{60}{' + c + '}' for c in tbl.columns}).\
+tbl = tbl.rename(columns={c:squeeze_problem_names(c) for c in tbl.columns}).\
     rename(index={idx:str(idx) for idx in tbl.index })
 tbl.style.to_latex("performance_stepsize_tolerance.tex", clines="all;data")
 tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different values of $\\epsilon_{{\\text{{Target}}}}$ averaged over  all other parameter choices. The values denote the relative number of cases (total {int(totals[0])}) the corresponding value performed best for the given problem."
@@ -140,17 +129,6 @@ print(tbl_description)
 tbl
 
 #%% Compare success rates for diverengence check
-def vec_to_latex_set(vec:np.ndarray) -> str:
-    vec = np.reshape(vec, (-1))
-    vec = np.sort(vec)
-    if len(vec) == 1:
-        return my_number_formatter(vec[0])
-    if len(vec) == 2:
-        return f"\\{{{my_number_formatter(vec[0])}, {my_number_formatter(vec[-1])}\\}}"
-    if len(vec) > 2:
-       return f"\\{{{my_number_formatter(vec[0])}, {my_number_formatter(vec[1])}, \\ldots, {my_number_formatter(vec[-1])}\\}}"
-    
-    
 df_rates = df_agg.query("Problem in @low_dim_probs & Method == 'CBREE (GM)'")
 df_rates = df_rates[df_rates["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
 df_rates = df_rates[df_rates["Smoothing Function"] == best_approximation]
@@ -161,7 +139,9 @@ tbl_success_rates = tbl_success_rates.groupby(list(tbl_success_rates))\
     .to_frame(name='$N_{{ \\text{{obs}} }}$')\
     .reset_index()\
     .set_index('$N_{{ \\text{{obs}} }}$') \
-    .applymap(lambda x: f"{x*100:.2f}\%")
+    .applymap(lambda x: f"{x*100:.2f}\%") \
+    .rename(index={"0":'No div. check'})
+tbl_success_rates.rename(columns = {c: squeeze_problem_names(c) for c in tbl_success_rates.columns}, inplace=True)
 tbl_description = f"Comparing the success rates of the CBREE (GM) method for different values of $N_{{ \\text{{obs}} }}$  and $\\Delta_{{\\text{{Target}}}}=1$ averaged over all sample sizes $J =   {vec_to_latex_set(df_rates['Sample Size'].unique())}$. \
 The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
 and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
@@ -188,6 +168,7 @@ tbl_success_err = tbl_success_err / tbl_success_err.loc[0,:]
 tbl_success_err = tbl_success_err[tbl_success_err.index.isin([2,5,10])]
 tbl_success_err = tbl_success_err.applymap(lambda x: f"{x*100:.2f}\%")
 tbl_success_err.index = pd.Index(map(my_number_formatter, tbl_success_err.index), name=tbl_success_rates.index.name)
+tbl_success_err = tbl_success_err.rename(columns={c: squeeze_problem_names(c) for c in tbl_success_err.columns})
 tbl_success_err
 tbl_describtion = f"Comparing the emprirical relative root MSE of the CBREE (GM) method for different values of $N_{{ \\text{{obs}} }} > 1$  and $\\Delta_{{\\text{{Target}}}}=1$ to the base case of ommiting the divergence check. \
 The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
@@ -221,22 +202,62 @@ print(tbl_description)
 tbl_success_cost.style.to_latex("cost_obs_window.tex", clines="all;data")
 tbl_success_cost
 
-#%% How often is the divergence check triggered for CBREE (vMFNM)
-df_vmfnm = df_success.query("Problem in @low_dim_probs & Method == 'CBREE (vMFNM)'")
-df_vmfnm = df_vmfnm[df_vmfnm["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
-df_vmfnm = df_vmfnm[df_vmfnm["Smoothing Function"] == best_approximation]
-df_vmfnm = df_vmfnm[df_vmfnm["$N_{{ \\text{{obs}} }}$"].isin([0,2,5,10])]
-df_vmfnm = df_vmfnm[["Problem", "Solver", "Sample Size", "Steps", "$N_{{ \\text{{obs}} }}$", "$\\Delta_{{\\text{{Target}}}}$"]]
-df_vmfnm = df_vmfnm.groupby(["Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$"])\
-    .apply(lambda grp: len(grp["Steps"].unique()))
+#%% make plot for divergence check with fujita rackwitz
+fr_all = df_agg_all.query("Problem == 'Fujita Rackwitz Problem (d=2)' & Method =='CBREE (GM)'")
+fr_all = fr_all[(fr_all[DF_COLUMNS_TO_LATEX['observation_window']]==0) & \
+                (fr_all[DF_COLUMNS_TO_LATEX['stepsize_tolerance']]==best_tolerance) & \
+                (fr_all[DF_COLUMNS_TO_LATEX['tgt_fun']]==best_approximation) & \
+                (fr_all[DF_COLUMNS_TO_LATEX['cvar_tgt']]==1)]
+fr_all = fr_all.assign(Portion="All Simulations")
+fr_success = df_agg.query("Problem == 'Fujita Rackwitz Problem (d=2)' & Method =='CBREE (GM)'")
+fr_success = fr_success[(fr_success[DF_COLUMNS_TO_LATEX['observation_window']]>0) & \
+                (fr_success[DF_COLUMNS_TO_LATEX['stepsize_tolerance']]==best_tolerance) & \
+                (fr_success[DF_COLUMNS_TO_LATEX['tgt_fun']]==best_approximation) & \
+                (fr_success[DF_COLUMNS_TO_LATEX['cvar_tgt']]==1)]
+fr_success = fr_success.assign(Portion="Only Successful Simulations")
+df_fr = pd.concat([fr_all, fr_success], axis=0)
+fig_fr =go.Figure()
+n_obs_col_dict = sr_to_color_dict(df_fr[DF_COLUMNS_TO_LATEX['observation_window']])
+for n in df_fr[DF_COLUMNS_TO_LATEX['observation_window']].sort_values().unique():
+    this_df = df_fr[df_fr[DF_COLUMNS_TO_LATEX['observation_window']] ==n]\
+        .sort_values("Sample Size")
+    tr = go.Scatter(
+        x = this_df["Relative Root MSE"],
+        y = this_df["Cost Mean"],
+        mode="markers+lines",
+        marker_symbol = "circle",
+        legendgroup = str(n==0),
+        marker_color = CMAP[3] if n==0 else n_obs_col_dict[str(n)],
+        legendgrouptitle_text = "All Simulations" if n==0 else "Only Successful Simulations",
+        name= "No Divergence Check" if n==0 else f"{LATEX_TO_HTML[DF_COLUMNS_TO_LATEX['observation_window']]} = {int(n)}",
+        line_dash = "dash" if n==0 else "solid")
+    fig_fr.add_trace(tr)
+fig_fr.update_layout(**MY_LAYOUT)
+fig_fr.update_layout(height=800)
+fig_fr.update_xaxes(title_text="Relative Root MSE", type="log")
+fig_fr.update_yaxes(title_text="Cost Mean", type="log",  title_standoff=0)
+fig_fr.write_image("divergence_fujita_rackwitz.png", scale=WRITE_SCALE)
+fig_description = f"The effect of the divergence check on the Fujita Rackwitz Problem (d=2). \
+We show the empirical error and cost estimates based on all 200 simulations (successful or not) \
+if the CBREE methods runs with no divergence check. \
+The same quantities  based on the successful portion of the 200 simulations \
+are plotted for different values of $N_\\text{{obs}}$ \
+if the divergence check is active.\
+The parameters $\\Delta_{{\\text{{Target}}}}=1$,  $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
+and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
+are fixed."
+print(fig_description)
+with open("divergence_fujita_rackwitz_desc.tex", "w")  as f:
+    f.write(fig_description)
+fig_fr.show()
 #%% make plots
 
 fig_list= []
 for prob in df_agg.Problem.unique():
-    this_df = df_agg.query("Problem == @prob")
+    this_df = df_agg.query("Problem == @prob & Method=='CBREE (GM)'")
     this_df = this_df[this_df["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
     this_df = this_df[this_df["Smoothing Function"] == best_approximation]
-    this_df = this_df[this_df['$N_{{ \\text{{obs}} }}$'].isin([2,5,10])]
+    this_df = this_df[this_df['$N_{{ \\text{{obs}} }}$'].isin([0, 2,5,10])]
     cmap = sr_to_color_dict(this_df["$\\Delta_{{\\text{{Target}}}}$"])
     this_df["cvar_tgt_str"] = this_df["$\\Delta_{{\\text{{Target}}}}$"].apply(str)
     this_df = this_df.sort_values(["$\\Delta_{{\\text{{Target}}}}$", "$N_{{ \\text{{obs}} }}$"])
@@ -251,10 +272,13 @@ for prob in df_agg.Problem.unique():
         facet_row="$N_{{ \\text{{obs}} }}$",
         color_discrete_map=cmap,
         color="cvar_tgt_str",
+        hover_name='Success Rate',
         log_x=True,
         log_y=True,
+        #hover_name = "Sample Size",
         markers=True,
         labels=LATEX_TO_HTML | {"cvar_tgt_str": LATEX_TO_HTML[DF_COLUMNS_TO_LATEX["cvar_tgt"]]},
+        
         
     )
     # add benchmark
@@ -279,17 +303,19 @@ for prob in df_agg.Problem.unique():
     # 
     fig.update_layout(**MY_LAYOUT)
     fig.update_layout(**{"width":700,
-    "height":900})
+    "height":800})
     fig.for_each_annotation(
-        lambda a: a.update(yshift =  -10 if a.text.startswith("Method") else 0))
+        lambda a: a.update(yshift =  -10 if a.text.startswith("Method") else 0))    
+    old_a = LATEX_TO_HTML[DF_COLUMNS_TO_LATEX["observation_window"]] + "=0.0"
+    new_a = "No Divergence Check"
+    fig.for_each_annotation(
+        lambda a: a.update(text = new_a if a.text == old_a else a.text))
     fig.show()
     fig.write_image(f"{prob} stopping criterion.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
-# %%
-fig_description = f"Solving low dimensional toy problems with the CBREE methods using  \
+    fig_description = f"Solving the {prob} with the CBREE method using  \
 different parameters. \
-We vary the stopping criterion $\\Delta_{{\\text{{Target}}}}$ (color), \
-the divergence criterion $N_\\text{{obs}}$ (row) and \
-the importance sampling density $\\mu^N$ (column). \
+We vary the stopping criterion $\\Delta_{{\\text{{Target}}}}$ (color) and \
+the length of the observation window $N_\\text{{obs}}$ (row). \
 The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
 and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
 are fixed. \
@@ -298,9 +324,11 @@ Furthermore we plot also the performance of the benchmark methods EnKF\
 and SiS (with different MCMC sampling methods). \
 We used the sample sizes $J \\in {vec_to_latex_set(df_agg['Sample Size'].unique())}$.\
 Each marker represents the empirical estimates based the successful portion of $200$ simulations."
-with open(f"lowdim_stopping criterion_desc.tex".replace(" ", "_").lower(), "w") as file:
-    file.write(fig_description)
-print(fig_description)
+    with open(f"{prob} criterion_desc.tex".replace(" ", "_").lower(), "w") as file:
+        file.write(fig_description)
+    print(fig_description)
+# %%
+
 
 # %%
 def get_convergence_rate(grp):

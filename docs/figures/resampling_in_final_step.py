@@ -151,7 +151,7 @@ if not path.exists(path.join(out_dir, "processed_data.pkl")):
     df.loc[df["callback"].isna(),"Solver"] = "CBREE"
     df.loc[df["callback"].isna(),"callback"] = "None"
     df.loc[df["callback"].str.contains("gm"), "Solver"] = "CBREE (GM)"
-    df.loc[df["callback"].str.contains("vmfnm"), "Solver"] = "CBREE (vMFNM)"
+    df = df.loc[~df["callback"].str.contains("vmfnm"),:].reset_index()
     df = ree.add_evaluations(df)
     df_agg = ree.aggregate_df(df)
     df_agg.to_pickle(path.join(out_dir, "processed_data.pkl"))
@@ -163,32 +163,32 @@ fig = figs[0]
 
 fig_name="resampling_in_final_step"
 fig.update_yaxes(title_text = "LSF Evaluations")
-fig.update_layout(title_text = "")
+fig.update_layout(title_text = "", height=800)
 fig.write_image(fig_name + ".png",scale=WRITE_SCALE)
 fig.show()
 # %%
-fig_description = f"Solving the {prob.name} with the CBREE method using  \
+fig_description = f"Solving the {prob.name} with two CBREE methods using  \
 $J \\in \\{{{', '.join(map(str, sample_sizes))}\\}}$ particles, \
-stopping criterion $\\Delta_{{\\text{{Target}}}} = {solver.cvar_tgt}$, \
-stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {solver.stepsize_tolerance}$, \
+the stopping criterion $\\Delta_{{\\text{{Target}}}} = {solver.cvar_tgt}$, \
+the stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {solver.stepsize_tolerance}$, \
 controlling the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = {solver.lip_sigma}$ \
 and approximating the indicator function with {INDICATOR_APPROX_LATEX_NAME[solver.tgt_fun]}. \
 No divergence check has been performed. \
 Each simulation was repeated {num_runs} times. \
-While the markers present the empirical means of the visualized data, the error bars are drawn from first to the third quartile."
+While the markers present the empirical means of the visualized quantities, the error bars are drawn from first to the third quartile."
 with open(fig_name + "_desc.tex", "w") as file:
     file.write(fig_description)
 print(fig_description)
 
 
 #%% 2. prepare data for effective sample size study
-if not path.exists(path.join(out_dir, "ess_data.pkl")):
+if not  path.exists(path.join(out_dir, "ess_data.pkl")):
     df = ree.load_data(out_dir, pattern)
     # Nice solver names
     df.loc[df["callback"].isna(),"Solver"] = "CBREE"
     df.loc[df["callback"].isna(),"callback"] = "None"
     df.loc[df["callback"].str.contains("gm"), "Solver"] = "CBREE (GM)"
-    df.loc[df["callback"].str.contains("vmfnm"), "Solver"] = "CBREE (vMFNM)"
+    df = df.loc[~df["callback"].str.contains("vmfnm"),:].reset_index()
     df = ree.add_evaluations(df)
     df["VAR IS Weights"] = (df["Estimate"] * df["cvar_is_weights"] )**2
     df["J_ESS"] = df["VAR IS Weights"] / df["Estimate Variance"]
@@ -207,7 +207,8 @@ fig_hist = px.box(df_ess,
                         y = "J_ESS",
                         color="Solver",
                         points=False,
-                        color_discrete_sequence = CMAP)
+                        color_discrete_sequence = CMAP,
+                        labels={"Solver": "Method"})
 df_ess_agg = df_ess.groupby(["Solver","Sample Size"]).mean().reset_index()
 # for s in df_ess.Solver.unique():
 #     tmp = df_ess_agg[df_ess_agg.Solver == s]
@@ -221,8 +222,9 @@ df_ess_agg = df_ess.groupby(["Solver","Sample Size"]).mean().reset_index()
 #         )
 #     )
 fig_hist.update_layout(**MY_LAYOUT)
+fig_hist.update_layout(height=800)
 fig_hist.update_xaxes(title_text = "Sample Size <i>J</i>")
-fig_hist.update_yaxes(title_text = f"Relative Error of {STR_J_ESS} Estimate")
+fig_hist.update_yaxes(title_text = f"Relative Error of ESS(<b><i>r</b></i>) Estimate")
 fig_hist.write_image(fig_name + "_boxplot.png",scale=WRITE_SCALE)
 fig_hist.show()
 # %%

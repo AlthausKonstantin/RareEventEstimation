@@ -108,6 +108,7 @@ fig.update_yaxes(title_text=STR_SIGMA_N, title_standoff=0, row=2, col=1, seconda
 fig.update_yaxes(title_text=STR_BETA_N, row=2, col=1, secondary_y=False)
 fig.update_xaxes(title_text="Iteration <i>n<i>", row=3, col=1)
 fig.update_layout(**MY_LAYOUT)
+fig.update_layout(height=800)
 fig.write_image(fig_name + ".png",scale=7)
 fig.show()
 # Save a info for the figure
@@ -133,9 +134,9 @@ for i_n, i in enumerate(iters):
     for soln, sol in enumerate(solution_list):
         
         w = solver_list[soln]._CBREE__compute_weights(sol.other["cache_list"][i], return_weights=True)
-        hist_name = f"<i>log</i> of weights <i><b>w<sup>{i}</sup></b></i>" +(  f", {STR_BETA_N} constant" \
+        hist_name = f"<i>log</i> of weights <i><b>w<sup>{i}</sup></b></i>" +(  f" ({STR_BETA_N} constant)" \
             if not solver_list[soln].beta_adaptivity else "") + \
-            f", Skewness {sp.stats.skew(np.exp(w)):.1f}"
+            f": Skewness {sp.stats.skew(np.exp(w)):.1f}"
         hist = go.Histogram(
             x=np.log(w),
             showlegend=False,
@@ -156,11 +157,11 @@ for soln, sol in enumerate(solution_list):
         hist_fig.update_xaxes(title=f"<i>log(<b>w<sup>{i}</sup></b>)<i>", row=i_n+1, col = soln+1,title_standoff=0)
 hist_fig.update_yaxes(range=[0,250])
 hist_fig.update_layout(**MY_LAYOUT)
+fig.update_layout(height=800)
 hist_fig.update_layout(margin_t=50)
 hist_fig.for_each_annotation(lambda a: a.update(y=a.y+0.01))
 hist_fig.show()
 hist_fig.write_image(hist_fig_name + ".png",scale=WRITE_SCALE)
 
 # %%
-fig.write_image("test.png",scale=WRITE_SCALE)
 # %%

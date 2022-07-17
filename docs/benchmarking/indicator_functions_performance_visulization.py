@@ -5,6 +5,7 @@ from re import X
 import scipy as sp
 import rareeventestimation as ree
 from rareeventestimation.evaluation.constants import INDICATOR_APPROX_LATEX_NAME
+from rareeventestimation.evaluation.convergence_analysis import squeeze_problem_names
 import numpy as np
 import scipy as sp
 import sympy as smp
@@ -48,6 +49,7 @@ for tgt in df.cvar_tgt.unique():
                         fill_value="0 \%", 
                         aggfunc= lambda x: f"{100*x.values.item():.1f}\\%")
     tbl = tbl.reindex(lvl_1, level=0)
+    tbl.index.set_levels([*map(squeeze_problem_names, tbl.index.levels[1])], level=1, inplace=True) # shorter problem names
     # style and save
     tbl.columns.name=None
     tbl.index = tbl.index.set_names(names={"tgt_fun": "Approximation"}, )
@@ -57,7 +59,7 @@ for tgt in df.cvar_tgt.unique():
             "singular matrix":"Singular $c^n$"}, index=INDICATOR_APPROX_LATEX_NAME)  
     tbl.style.to_latex(f"success_rates_tgt_{tgt}.tex",
                        multirow_align="naive",
-                       column_format="ccrRP",
+                       #column_format="ccrRP",
                        clines="skip-last;data")
     with open(f"success_rates_tgt_{tgt}_desc.tex", "w") as file:
         file.write(f"Exit Messages of unsuccessful runs with stopping criterion $\\Delta_{{\\text{{Target}}}} = {tgt}$. Values are proportional to 200 sample runs.")
@@ -81,10 +83,13 @@ for cvar_tgt in df.cvar_tgt.unique():
             # style and save
             df_acc = df_acc.rename(columns=INDICATOR_APPROX_LATEX_NAME)
             df_acc.columns.name="Approximation"
-            tbl = df_acc.style.format(precision=2)
+            
+            tbl = df_acc.rename(index={p: squeeze_problem_names(p) for p in df_acc.index})\
+                .style.format(precision=2)
             tbl.to_latex(f"accuracy_tgt_{cvar_tgt}{'_success_only' if op=='==' else '' }.tex",
                         clines="all;data")
             with open(f"accuracy_tgt_{cvar_tgt}{'_success_only' if op=='==' else '' }_desc.tex", "w") as file:
                 file.write(f"Relative root mean squared error of {'successful runs with indicator function approximations that always led to convergence' if op=='==' else 'successful runs with indicator function approximations that have not always converged'} using the stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$.")
-        
+
+tbl
 # %%

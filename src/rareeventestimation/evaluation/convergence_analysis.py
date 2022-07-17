@@ -3,9 +3,10 @@
 from ast import literal_eval
 from copy import deepcopy
 from glob import glob
+from re import sub
 from logging import warning
 from numbers import Real
-from numpy import asarray, average, concatenate, float64, ndarray, sqrt, zeros, var, nan, stack
+from numpy import asarray, average, concatenate, float64, ndarray, sqrt, zeros, var, nan, stack, array, unique, reshape
 from scipy.fftpack import cc_diff
 from scipy.stats import variation
 from rareeventestimation.solution import Solution
@@ -397,19 +398,21 @@ def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Mas
                                   "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie/sis_sim"},
                      df_dir = "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie",
                      df_names ={"df": "benchmark_toy_problems_processed.pkl",
-                                "df_agg": "benchmark_toy_problems_aggregated.pkl"})-> tuple:
+                                "df_agg": "benchmark_toy_problems_aggregated.pkl"},
+                     force_reload=False)-> tuple:
     """Custom function to load benchmark simultions.
 
     Args:
         data_dirs (dict, optional): Paths to simulations. Defaults to {"enkf":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/enkf_sim", "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/sis_sim"}.
         df_dir (str, optional): Look here for pickled results before loading. Defaults to "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data".
+        force_reload (bool, optional): If true, don't look for pickled results.
 
     Returns:
         tuple: (dataset, aggregated dataset)
     """    
     path_df= path.join(df_dir, df_names["df"])
     path_df_agg = path.join(df_dir, df_names["df_agg"])
-    if not (path.exists(path_df) and path.exists(path_df_agg)):
+    if not (path.exists(path_df) and path.exists(path_df_agg)) or force_reload:
         # load dfs
         df = None
         df_agg = None
@@ -417,6 +420,10 @@ def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Mas
             this_df = load_data(data_dir, "*")
             this_df.drop(columns=["index", "Unnamed: 0"], inplace=True, errors="ignore")
             this_df.drop_duplicates(inplace=True)
+            # cast solver names, add cvat_tgt to name for
+            # correct grouping in add_evaluation and aggregate_df
+            this_df = this_df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
+            this_df["Solver"] = this_df.apply(lambda x : ", ".join([x.Solver, str(x.cvar_tgt)]), axis=1)
             this_df = add_evaluations(this_df)
             this_df_agg = aggregate_df(this_df)
             if df is None:
@@ -427,6 +434,7 @@ def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Mas
                 df_agg = this_df_agg
             else:
                 df_agg = pd.concat([df_agg, this_df_agg],ignore_index=True)
+        # recast solver nmaes for plotting
         df = df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
         df.to_pickle(path_df)
         df_agg = df_agg.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
@@ -464,4 +472,91 @@ def force_bm_names(row:pd.Series, name= "Solver", specification="mixture_model")
     row[name] = new_name
     return row
         
-        
+def expand_cbree_name(input:pd.Series, columns=[], pattern="}") -> pd.Series:
+    """Custom function adds parameter values to field `Solver`.
+
+    Args:
+        input (pd.Series): Row of dataframe. Must contain `Solver` and everything in `columns`
+        columns (list, optional):Add these columns and their value to the solver name. Defaults to [].
+        pattern (str, optional): New values replace this pattern. Defaults to "}".
+
+    Returns:
+        pd.Sereis: input with updated field `Solver`
+    """
+    for col in columns:
+        input.Solver = input.Solver.replace(pattern, f", '{col}': '{input[col]}'}}")
+    return input
+
+def my_number_formatter(x:Real) -> str:
+    """Custom version of `str(x)`.
+    Integers get integer notation, floats are cut after 2 digits
+    Args:
+        x (Real): Number to format.
+
+    Returns:
+        str: Formatted number
+    """
+    if int(x)==x:
+        return str(int(x))
+    else:
+        return f"{x:.2f}"
+
+def vec_to_latex_set(vec:ndarray) -> str:
+    """Make a nice latex set representation of the values in vec.
+
+    Args:
+        vec (ndarray): Array with `Real` entries.
+
+    Returns:
+        str: Something like "vec[0]" or "\\{{vec[0|, vec[1], ..., vec[-1]\\}}".
+    """
+    vec = reshape(vec, (-1))
+    vec = unique(vec)
+    if len(vec) == 1:
+        return my_number_formatter(vec[0])
+    if len(vec) == 2:
+        return f"\\{{{my_number_formatter(vec[0])}, {my_number_formatter(vec[-1])}\\}}"
+    if len(vec) > 2:
+       return f"\\{{{my_number_formatter(vec[0])}, {my_number_formatter(vec[1])}, \\ldots, {my_number_formatter(vec[-1])}\\}}"
+
+
+    
+def list_to_latex(ls:list) -> str:
+    """Exhaustive version of `vec_to_l  ex_set` with no sorting or ellipsis.
+
+    Args:
+        ls (list): Stuff to enumerate
+
+    Returns:
+        str: Latex set of all `ls` entries if all entries are `Real`.
+            Else Enumeration of all objects in `ls` seperated by a ', '.
+    """
+    if len(ls) == 0:
+        return "$\\emptyset$"
+    if len(ls) == 1 and isinstance(ls[0], Real):
+        return my_number_formatter(ls[0])
+    if len(ls) == 1:
+        return f"{ls[0]}"
+    if all(array([isinstance(v, Real) for v in ls])):
+        return f"$\\{{ {', '.join(map(my_number_formatter, ls))} \\}}$"
+    else:
+         return f"{', '.join(ls)}"
+     
+
+def squeeze_problem_names(prob_name:str) -> str:
+    """Abbreviate the problem names.
+
+    Args:
+        prob_name (str): Problem name.
+
+    Returns:
+        str: Abbreviated problem name.
+    """
+    d = sub(r'\D', '', prob_name)
+    if prob_name.startswith("Convex"):
+        return "CP"
+    if prob_name.startswith("Linear"):
+        return f"LP (d={d})"
+    if prob_name.startswith("Fujita"):
+        return f"FRP (d={d})"
+    return prob_name

@@ -1,11 +1,13 @@
 import plotly.express as px
-CMAP = px.colors.qualitative.Safe 
+CMAP = px.colors.qualitative.D3 
 import plotly.io as pio
 MY_TEMPLATE = pio.templates["plotly_white"]
 MY_TEMPLATE.update({"layout.colorway": CMAP})
 MY_LAYOUT = {
     "template":MY_TEMPLATE,
     "font_family":"Serif",
+    "xaxis_exponentformat":"power",
+    "yaxis_exponentformat":"power",
     "autosize":False,
     "width":700,
     "height":700*2/3,
@@ -38,19 +40,19 @@ BM_SOLVER_SCATTER_STYLE = {
     "EnKF (vMFNM)":{
         "line_dash": "dash",
         "marker_symbol": "square",
-        "marker_color": CMAP[0]},
+        "marker_color": CMAP[4]},
     "EnKF (GM)":{
         "line_dash": "dash",
         "marker_symbol": "square",
-        "marker_color": CMAP[1]},
+        "marker_color": CMAP[5]},
     "SIS (GM)":{
         "line_dash": "dot",
         "marker_symbol": "diamond",
-        "marker_color": CMAP[1]},
+        "marker_color": CMAP[6]},
     "SIS (aCS)":{
         "line_dash": "dot",
         "marker_symbol": "diamond",
-        "marker_color": CMAP[1]},
+        "marker_color": CMAP[7]},
     
 }
 

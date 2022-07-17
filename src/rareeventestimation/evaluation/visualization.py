@@ -60,6 +60,8 @@ def make_accuracy_plots(df:pd.DataFrame, save_to_resp_path=True,plot_all_seeds=F
                 y = yvals,
                 x = xvals,
                 name = solver,
+                legendgroup=0,
+                legendgrouptitle_text = "Method",
                 mode="lines + markers",
                line={"color": solver_colors.get(solver), "dash": solver_dashes.get(solver)},
                 error_x={
@@ -348,3 +350,4 @@ def plot_iteration(iter: int, prob: Problem, sol:Solution=None, delta=1) -> Figu
         fig = Figure(data=[c_lsf, c_tgt, s], layout=l)
         #fig = go.Figure(data=[c_lsf, s], layout=l)
         return fig
+    
