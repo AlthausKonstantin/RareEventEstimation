@@ -68,9 +68,9 @@ for i, prob in enumerate(problem_list):
     figs.append(fig)
     fig.show()
     fig.write_image(f"{prob.name} scatter plot.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
-    fig_description = f"Contour plot of the {prob.name}. \
+    fig_description = f"Failure domain of the {prob.name}. \
 Also the final ensembles of the CBREE, SiS and EnKF methods respectively are plotted. \
-Each method uses $J=1000$ samples and the stopping criterion $\\Delta_{{\\text{{Target}}}}$ = {cvar_tgt}. \
+Each method used $J=1000$ samples and the stopping criterion $\\Delta_{{\\text{{Target}}}}$ = {cvar_tgt}. \
 The CBREE method performed no divergence check, used the approximation $I_\\text{{alg}}$, the stepsize control $\\epsilon_{{\\text{{Target}}}}=0.5$ and controled the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = 1$."
     with open(f"{prob.name} scatter plot desc.tex".replace(" ", "_").lower(), "w") as file:
         file.write(fig_description)

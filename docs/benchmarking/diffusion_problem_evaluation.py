@@ -60,7 +60,7 @@ df_bm, df_bm_agg = ree.get_benchmark_df(data_dirs=bm_data_dirs,
 fig_list= []
 for prob in df_agg["Problem"].unique():
     this_df = df_agg.query("Problem == @prob & `Smoothing Function` == 'algebraic'")
-    #this_df = this_df[this_df["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
+    this_df = this_df[this_df["$\\epsilon_{{\\text{{Target}}}}$"]==1]
     #this_df = this_df[this_df["Smoothing Function"] == "algebraic"]
     this_df = this_df[this_df['$N_{{ \\text{{obs}} }}$'].isin([4,8,12])]
    # this_df["cvar_tgt_str"] = this_df["$\\Delta_{{\\text{{Target}}}}$"].apply(str)
@@ -103,26 +103,20 @@ for prob in df_agg["Problem"].unique():
     fig.update_layout(**MY_LAYOUT)
     fig.update_layout(height=900)
     fig.for_each_annotation(
-        lambda a: a.update(yshift =  -10 if a.text.startswith(LATEX_TO_HTML[DF_COLUMNS_TO_LATEX["stepsize_tolerance"]]) else 0))
+        lambda a: a.update(text =  "" if a.text.startswith(LATEX_TO_HTML[DF_COLUMNS_TO_LATEX["stepsize_tolerance"]]) else a.text))
     fig.show()
     fig.write_image(f"diffusion problem.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
-    fig.update_layout(legend=dict(
-    orientation="h",
-    yanchor="bottom",
-    y=1.02,
-    xanchor="right",
-    x=1))
     fig.show()
-    fig_description = f"Solving the {prob} with the CBREE (vMFNM, resampled) method using  \
+    fig_description = f"Solving the {prob} with the CBREE (vMFN) method using  \
 different parameters. \
-We vary the averaging method (color), \
-the stepsize tolerance $\\epsilon_{{\\text{{Target}}}}$ (column) and \
-the divergence criterion $N_\\text{{obs}}$ (row). \
-The choice of the stopping criterion $\\Delta_{{\\text{{Target}}}} = 2$ and indicator approximation {INDICATOR_APPROX_LATEX_NAME['algebraic']} \
+We vary the averaging method (color) and \
+the divergence check $N_\\text{{obs}}$ (row). \
+The choice of the stopping criterion $\\Delta_{{\\text{{Target}}}} = 2$, \
+the stepsize tolerance $\\epsilon_{{\\text{{Target}}}}=1$ \
+and indicator approximation {INDICATOR_APPROX_LATEX_NAME['algebraic']} \
 are fixed. \
-Furthermore we plot also the performance of the benchmark methods EnKF\
-(with different importance sampling densities)\
-and SiS (with different MCMC sampling methods). \
+Furthermore we plot also the performance of the benchmark methods EnKF \
+and SIS.  \
 We used the sample sizes $J \\in {vec_to_latex_set(df_agg['Sample Size'].unique())}$. \
 Each marker represents the empirical estimates based the successful portion of $200$ simulations."
     with open(f"diffusion problem desc.tex".replace(" ", "_").lower(), "w") as file:

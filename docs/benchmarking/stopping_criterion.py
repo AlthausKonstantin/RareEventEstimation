@@ -36,7 +36,7 @@ if not  (path.exists(path_df) and path.exists(path_df_agg) and path.exists(path_
     df = df.apply(expand_cbree_name, axis=1, columns= ['observation_window', 'callback'])
     # %% Pretty names
     to_drop = ["mixture_model"] # info is redundant as resample = False and callback exists
-    replace_values = {"Method": {"False": "CBREE", "vMFNM Resample": "CBREE (vMFNM)"}}
+    replace_values = {"Method": {"False": "CBREE", "vMFN Resample": "CBREE (vMFN, resampled)"}}
     df = df.drop(columns=to_drop) \
         .rename(columns=DF_COLUMNS_TO_LATEX) \
         .replace(replace_values)
@@ -56,7 +56,7 @@ if not  (path.exists(path_df) and path.exists(path_df_agg) and path.exists(path_
     #%% save
     df_success.to_pickle(path_df)
     df_agg.to_pickle(path_df_agg)
-    image.png.to_pickle(path_df_agg_all)
+    df_agg_all.to_pickle(path_df_agg_all)
 else:
     df_success = pd.read_pickle(path_df)
     df_agg = pd.read_pickle(path_df_agg)
@@ -83,7 +83,7 @@ tbl_params
 def decide(grp,par):
     best = grp.sort_values("Relative Root MSE")[par].values[0]
     return(pd.Series([best], index =[f"{par}"]))
-df_tgt_fun = df_agg.query("Problem in @low_dim_probs")\
+df_tgt_fun = df_agg.query("Problem in @low_dim_probs & Method == 'CBREE'")\
     .loc[:,("Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "Smoothing Function", "Relative Root MSE", "$N_{{ \\text{{obs}} }}$", "$\\epsilon_{{\\text{{Target}}}}$")] \
     .groupby(["Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "$N_{{ \\text{{obs}} }}$", "$\\epsilon_{{\\text{{Target}}}}$"]) \
     .apply(decide, "Smoothing Function") 
@@ -100,14 +100,14 @@ tbl = tbl.applymap(lambda x: f"{x*100:.2f}\%")
 tbl = tbl.rename(index = INDICATOR_APPROX_LATEX_NAME)
 tbl = tbl.rename(columns={c:squeeze_problem_names(c) for c in tbl.columns})
 tbl.style.to_latex("performance_approximations.tex", clines="all;data")
-tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different smoothing functions averaged over  all other parameter choices. The values denote the relative number of cases the corresponding smoothing function performed best for the given problem ({int(totals[0])} per problem)."
+tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different smoothing functions averaged over  all other parameter choices. The values denote the relative number of cases the corresponding smoothing function performed best for the given problem (in total {int(totals[0])} per problem)."
 with open(f"performance_approximations_desc.tex", "w") as file:
     file.write(tbl_description)
 print(tbl_description)
 tbl
 
 # %% Decide which stepsize tolerance is better
-df_tol = df_agg.query("Problem in @low_dim_probs")\
+df_tol = df_agg.query("Problem in @low_dim_probs & Method == 'CBREE'")\
     .loc[:,("Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "$\\epsilon_{{\\text{{Target}}}}$", "Relative Root MSE", "$N_{{ \\text{{obs}} }}$","Smoothing Function")] \
     .groupby(["Problem", "Sample Size", "$\\Delta_{{\\text{{Target}}}}$", "Method", "$N_{{ \\text{{obs}} }}$", "Smoothing Function"]) \
     .apply(decide,  "$\\epsilon_{{\\text{{Target}}}}$")     
@@ -122,14 +122,14 @@ tbl = tbl.applymap(lambda x: f"{x*100:.2f}\%")
 tbl = tbl.rename(columns={c:squeeze_problem_names(c) for c in tbl.columns}).\
     rename(index={idx:str(idx) for idx in tbl.index })
 tbl.style.to_latex("performance_stepsize_tolerance.tex", clines="all;data")
-tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different values of $\\epsilon_{{\\text{{Target}}}}$ averaged over  all other parameter choices. The values denote the relative number of cases (total {int(totals[0])}) the corresponding value performed best for the given problem."
+tbl_description = f"Comparing the estimates of $\\textup{{relRootMSE}}(\\hat{{P}}_f)$ for different values of $\\epsilon_{{\\text{{Target}}}}$ averaged over  all other parameter choices. The values denote the relative number of cases (in total {int(totals[0])} per problem) the corresponding value performed best for the given problem."
 with open(f"performance_stepsize_tolerance_desc.tex", "w") as file:
     file.write(tbl_description)
 print(tbl_description)
 tbl
 
 #%% Compare success rates for diverengence check
-df_rates = df_agg.query("Problem in @low_dim_probs & Method == 'CBREE (GM)'")
+df_rates = df_agg.query("Problem in @low_dim_probs & Method == 'CBREE'")
 df_rates = df_rates[df_rates["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
 df_rates = df_rates[df_rates["Smoothing Function"] == best_approximation]
 df_rates = df_rates[df_rates["$\\Delta_{{\\text{{Target}}}}$"]==1]
@@ -142,74 +142,27 @@ tbl_success_rates = tbl_success_rates.groupby(list(tbl_success_rates))\
     .applymap(lambda x: f"{x*100:.2f}\%") \
     .rename(index={"0":'No div. check'})
 tbl_success_rates.rename(columns = {c: squeeze_problem_names(c) for c in tbl_success_rates.columns}, inplace=True)
-tbl_description = f"Comparing the success rates of the CBREE (GM) method for different values of $N_{{ \\text{{obs}} }}$  and $\\Delta_{{\\text{{Target}}}}=1$ averaged over all sample sizes $J =   {vec_to_latex_set(df_rates['Sample Size'].unique())}$. \
-The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
+tbl_description = f"Comparing the success rates of the CBREE  method for different values of $N_{{ \\text{{obs}} }}$  averaged over all sample sizes $J =   {vec_to_latex_set(df_rates['Sample Size'].unique())}$. \
+The parameters $\\Delta_{{\\text{{Target}}}}=1$, \
+$\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
 and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
 are fixed. \
-The values denote the relative number of cases the CBREE (GM) method converged successfully for the particular combination of problem and paramter setting (total {6*200})."
+The values denote the relative number of cases the CBREE method converged successfully for the particular combination of problem and paramter setting (in total {6*200} per setting)."
 with open(f"success_obs_window_desc.tex", "w") as file:
     file.write(tbl_description)
 print(tbl_description)
 tbl_success_rates.style.to_latex("success_obs_window.tex", clines="all;data")
 tbl_success_rates
 
-#%% Compare performance for divergence check
-df_rates_all = df_agg_all.query("Problem in @low_dim_probs")
-df_rates_all = df_rates_all[df_rates_all["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
-df_rates_all = df_rates_all[df_rates_all["Smoothing Function"] == best_approximation]
-df_rates_all = df_rates_all[df_rates_all["$\\Delta_{{\\text{{Target}}}}$"]==1]
-
-tbl_success_err = pd.pivot_table(df_rates, values="Relative Root MSE", index='$N_{{ \\text{{obs}} }}$', columns="Problem", aggfunc=np.mean)
-
-tbl_all_err = pd.pivot_table(df_rates_all, values="Relative Root MSE", index='$N_{{ \\text{{obs}} }}$', columns="Problem", aggfunc=np.mean)
-
-tbl_success_err.loc[0,:] = tbl_all_err.loc[0,:] 
-tbl_success_err = tbl_success_err / tbl_success_err.loc[0,:] 
-tbl_success_err = tbl_success_err[tbl_success_err.index.isin([2,5,10])]
-tbl_success_err = tbl_success_err.applymap(lambda x: f"{x*100:.2f}\%")
-tbl_success_err.index = pd.Index(map(my_number_formatter, tbl_success_err.index), name=tbl_success_rates.index.name)
-tbl_success_err = tbl_success_err.rename(columns={c: squeeze_problem_names(c) for c in tbl_success_err.columns})
-tbl_success_err
-tbl_describtion = f"Comparing the emprirical relative root MSE of the CBREE (GM) method for different values of $N_{{ \\text{{obs}} }} > 1$  and $\\Delta_{{\\text{{Target}}}}=1$ to the base case of ommiting the divergence check. \
-The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
-and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
-are fixed. \
-For each problem and choice of $N_{{ \\text{{obs}} }} > 1$ as well as for the base case we average the empirical relative root MSE over all sample sizes $J$ before computing the proportion to the base case."
-with open(f"performance_obs_window_desc.tex", "w") as file:
-    file.write(tbl_describtion)
-print(tbl_describtion)
-tbl_success_err.style.to_latex("performance_obs_window.tex", clines="all;data")
-tbl_success_err
-
-# %% Compare cost for obs_window
-tbl_success_cost = pd.pivot_table(df_rates, values="Cost Mean", index='$N_{{ \\text{{obs}} }}$', columns="Problem", aggfunc=np.mean)
-
-tbl_all_cost = pd.pivot_table(df_rates_all, values="Cost Mean", index='$N_{{ \\text{{obs}} }}$', columns="Problem", aggfunc=np.mean)
-
-tbl_success_cost.loc[0,:] = tbl_all_cost.loc[0,:] 
-tbl_success_cost = tbl_success_cost / tbl_success_cost.loc[0,:] 
-tbl_success_cost = tbl_success_cost[tbl_success_cost.index.isin([2,5,10])]
-tbl_success_cost = tbl_success_cost.applymap(lambda x: f"{x*100:.2f}\%")
-tbl_success_cost.index = pd.Index(map(my_number_formatter, tbl_success_cost.index), name=tbl_success_cost.index.name)
-tbl_description = f"Comparing the emprirical average cost of the CBREE (GM) method for different values of $N_{{ \\text{{obs}} }} > 1$  and $\\Delta_{{\\text{{Target}}}}=1$ to the base case of ommiting the divergence check. \
-The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
-and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
-are fixed. \
-For each problem and choice of $N_{{ \\text{{obs}} }} > 1$ as well as for the base case we average the empirical average cost over all sample sizes $J$ before computing the proportion to the base case."
-with open(f"cost_obs_window_desc.tex", "w") as file:
-    file.write(tbl_description)
-print(tbl_description)
-tbl_success_cost.style.to_latex("cost_obs_window.tex", clines="all;data")
-tbl_success_cost
 
 #%% make plot for divergence check with fujita rackwitz
-fr_all = df_agg_all.query("Problem == 'Fujita Rackwitz Problem (d=2)' & Method =='CBREE (GM)'")
+fr_all = df_agg_all.query("Problem == 'Fujita Rackwitz Problem (d=2)' & Method =='CBREE'")
 fr_all = fr_all[(fr_all[DF_COLUMNS_TO_LATEX['observation_window']]==0) & \
                 (fr_all[DF_COLUMNS_TO_LATEX['stepsize_tolerance']]==best_tolerance) & \
                 (fr_all[DF_COLUMNS_TO_LATEX['tgt_fun']]==best_approximation) & \
                 (fr_all[DF_COLUMNS_TO_LATEX['cvar_tgt']]==1)]
 fr_all = fr_all.assign(Portion="All Simulations")
-fr_success = df_agg.query("Problem == 'Fujita Rackwitz Problem (d=2)' & Method =='CBREE (GM)'")
+fr_success = df_agg.query("Problem == 'Fujita Rackwitz Problem (d=2)' & Method =='CBREE'")
 fr_success = fr_success[(fr_success[DF_COLUMNS_TO_LATEX['observation_window']]>0) & \
                 (fr_success[DF_COLUMNS_TO_LATEX['stepsize_tolerance']]==best_tolerance) & \
                 (fr_success[DF_COLUMNS_TO_LATEX['tgt_fun']]==best_approximation) & \
@@ -254,7 +207,7 @@ fig_fr.show()
 
 fig_list= []
 for prob in df_agg.Problem.unique():
-    this_df = df_agg.query("Problem == @prob & Method=='CBREE (GM)'")
+    this_df = df_agg.query("Problem == @prob & Method=='CBREE'")
     this_df = this_df[this_df["$\\epsilon_{{\\text{{Target}}}}$"]==best_tolerance]
     this_df = this_df[this_df["Smoothing Function"] == best_approximation]
     this_df = this_df[this_df['$N_{{ \\text{{obs}} }}$'].isin([0, 2,5,10])]
@@ -305,7 +258,7 @@ for prob in df_agg.Problem.unique():
     fig.update_layout(**{"width":700,
     "height":800})
     fig.for_each_annotation(
-        lambda a: a.update(yshift =  -10 if a.text.startswith("Method") else 0))    
+        lambda a: a.update(text="" if a.text.startswith("Method") else a.text))    
     old_a = LATEX_TO_HTML[DF_COLUMNS_TO_LATEX["observation_window"]] + "=0.0"
     new_a = "No Divergence Check"
     fig.for_each_annotation(
@@ -319,10 +272,9 @@ the length of the observation window $N_\\text{{obs}}$ (row). \
 The parameter $\\epsilon_{{\\text{{Target}}}} = {best_tolerance}$ \
 and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME[best_approximation]} \
 are fixed. \
-Furthermore we plot also the performance of the benchmark methods EnKF\
-(with different importance sampling densities)\
-and SiS (with different MCMC sampling methods). \
-We used the sample sizes $J \\in {vec_to_latex_set(df_agg['Sample Size'].unique())}$.\
+Furthermore we plot also the performance of the benchmark methods EnKF \
+and SiS. \
+We used the sample sizes $J \\in {vec_to_latex_set(df_agg['Sample Size'].unique())}$. \
 Each marker represents the empirical estimates based the successful portion of $200$ simulations."
     with open(f"{prob} criterion_desc.tex".replace(" ", "_").lower(), "w") as file:
         file.write(fig_description)

@@ -157,7 +157,7 @@ for soln, sol in enumerate(solution_list):
         hist_fig.update_xaxes(title=f"<i>log(<b>w<sup>{i}</sup></b>)<i>", row=i_n+1, col = soln+1,title_standoff=0)
 hist_fig.update_yaxes(range=[0,250])
 hist_fig.update_layout(**MY_LAYOUT)
-fig.update_layout(height=800)
+hist_fig.update_layout(height=800)
 hist_fig.update_layout(margin_t=50)
 hist_fig.for_each_annotation(lambda a: a.update(y=a.y+0.01))
 hist_fig.show()

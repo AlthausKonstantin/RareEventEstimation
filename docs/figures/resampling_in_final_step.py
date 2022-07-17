@@ -150,7 +150,7 @@ if not path.exists(path.join(out_dir, "processed_data.pkl")):
     # Nice solver names
     df.loc[df["callback"].isna(),"Solver"] = "CBREE"
     df.loc[df["callback"].isna(),"callback"] = "None"
-    df.loc[df["callback"].str.contains("gm"), "Solver"] = "CBREE (GM)"
+    df.loc[df["callback"].str.contains("gm"), "Solver"] = "CBREE (G)"
     df = df.loc[~df["callback"].str.contains("vmfnm"),:].reset_index()
     df = ree.add_evaluations(df)
     df_agg = ree.aggregate_df(df)
@@ -187,7 +187,7 @@ if not  path.exists(path.join(out_dir, "ess_data.pkl")):
     # Nice solver names
     df.loc[df["callback"].isna(),"Solver"] = "CBREE"
     df.loc[df["callback"].isna(),"callback"] = "None"
-    df.loc[df["callback"].str.contains("gm"), "Solver"] = "CBREE (GM)"
+    df.loc[df["callback"].str.contains("gm"), "Solver"] = "CBREE (G)"
     df = df.loc[~df["callback"].str.contains("vmfnm"),:].reset_index()
     df = ree.add_evaluations(df)
     df["VAR IS Weights"] = (df["Estimate"] * df["cvar_is_weights"] )**2

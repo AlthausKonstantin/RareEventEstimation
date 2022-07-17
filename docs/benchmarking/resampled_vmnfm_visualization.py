@@ -15,7 +15,7 @@ from rareeventestimation.evaluation.visualization import add_scatter_to_subplots
 # %% Load
 data_dir ="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie/cbree_sim/toy_problems/resampled"
 df_path =path.join(data_dir, "resampled_toy_problems.pkl")
-if  path.exists(df_path):
+if not path.exists(df_path):
     df = ree.load_data(data_dir, "*")
     df.drop(columns=["index", "Unnamed: 0", "VAR Weighted Average Estimate","CVAR"], inplace=True, errors="ignore")
     df.drop_duplicates(inplace=True)
@@ -23,7 +23,7 @@ if  path.exists(df_path):
     # %% Pretty names
     to_drop = ["callback"] # no callbacks here
     df.rename(columns={"mixture_model": "Method"}, inplace=True)
-    replace_values = {"Method": {"GM": "CBREE (GM)", "vMFNM": "CBREE (vMFNM, resampled)"}}
+    replace_values = {"Method": {"GM": "CBREE", "vMFNM": "CBREE (vMFN)"}}
     df = df.drop(columns=to_drop) \
         .rename(columns=DF_COLUMNS_TO_LATEX) \
         .replace(replace_values)
@@ -97,25 +97,23 @@ for prob in df_agg.Problem.unique():
         lambda a: a.update(yshift =  -10 if a.text.startswith("Method") else 0))
     fig.show()
     fig.write_image(f"{prob} resampled stopping criterion.png".replace(" ", "_").lower(), scale=WRITE_SCALE)
-    fig_description = f"Solving {prob} with the CBREE methods using  \
+    fig_description = f"Solving the {prob} with the CBREE methods using  \
     different parameters. \
     We vary the stopping criterion $\\Delta_{{\\text{{Target}}}}$ (color), \
     the divergence criterion $N_\\text{{obs}}$ (row) and \
-    the method $\\mu^N$ (column). \
+    the method  (column). \
     The parameter $\\epsilon_{{\\text{{Target}}}} = {0.5}$ \
     and the choice of the indicator approximation {INDICATOR_APPROX_LATEX_NAME['algebraic']} \
     are fixed. \
-    Furthermore we plot also the performance of the benchmark methods EnKF\
-    (with different importance sampling densities)\
-    and SiS (with different MCMC sampling methods). \
-    We used the sample sizes $J \\in {vec_to_latex_set(df_agg['Sample Size'].unique())}$. \
+    Furthermore we plot also the performance of the benchmark methods EnKF \
+    and SiS. \
     Each marker represents the empirical estimates based the successful portion of $200$ simulations."
     with open(f"{prob} resampled stopping criterion desc.tex".replace(" ", "_").lower(), "w") as file:
         file.write(fig_description)
     print(fig_description)
 # %%
 # %% Make table with used parameters
-
+# 
      
 paras = ["Sample Size"] + list(DF_COLUMNS_TO_LATEX.values())
 tbl_params = df_agg.loc[:, tuple(paras)] \

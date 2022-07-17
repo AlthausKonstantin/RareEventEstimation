@@ -25,8 +25,7 @@ solver = ree.CBREE(seed=1,
              return_other=True)
 sol = solver.solve(prob)
 
-# %%
-ree.plot_cbree_parameters(sol, prob, plot_time=False)
+
 # %%
 fig = make_subplots(rows=3,
                     cols=1,
@@ -72,7 +71,7 @@ for p, p_name in params.items():
 fig.add_trace(
     go.Scatter(
         y = sol.other["cvar_is_weights"],
-        name = "\u0394(<i><b>r</b><sup>n</sup></i>)"
+        name = "C.O.V.(<i><b>r</b><sup>n</sup></i>)"
     ),
     row = 3,
     col = 1,
@@ -91,7 +90,7 @@ fig.add_hline(y=cvar_tgt,
     
 # Style fig
 fig.update_yaxes(title_text="Rel. Error", type="log", row=1, col=1)
-fig.update_yaxes(title_text="\u0394(<i><b>r</b><sup>n</sup></i>)", row=3, col=1, type="log")
+fig.update_yaxes(title_text="C.O.V.(<i><b>r</b><sup>n</sup></i>)", row=3, col=1, type="log")
 fig.update_yaxes(title_text=f"{STR_SIGMA_N} and {STR_H_N}", title_standoff=10, row=2, col=1, secondary_y=True)
 fig.update_yaxes(title_text=STR_BETA_N, row=2, col=1, secondary_y=False)
 fig.update_xaxes(title_text="Iteration <i>n<i>", row=3, col=1)
@@ -146,8 +145,8 @@ fig2.show()
 # save everything
 fig_description = f"Solving the {prob.name} with the CBREE method using  \
 $J = {J}$ particles, \
-stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$, \
-stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {solver.stepsize_tolerance}$, \
+the stopping criterion $\\Delta_{{\\text{{Target}}}} = {cvar_tgt}$, \
+the stepsize tolerance $\\epsilon_{{\\text{{Target}}}} = {solver.stepsize_tolerance}$, \
 controlling the increase of $\\sigma$ with $\\text{{Lip}}(\\sigma) = {solver.lip_sigma}$ \
 and approximating the indicator function with {INDICATOR_APPROX_LATEX_NAME[solver.tgt_fun]}."
 print(fig_description)
