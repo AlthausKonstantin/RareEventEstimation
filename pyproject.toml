@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rareeventestimation"
-version = "0.1.0"
+version = "0.1.1"
 description = "Estimate rare events with consensus based sampling and other methods."
 authors = ["Konstantin Althaus <althaus.konstantin.95@gmail.com>"]
 license = "MIT"
@@ -17,6 +17,8 @@ Pillow = "^9.1.1"
 argparse = "^1.4.0"
 matplotlib = "^3.5.2"
 ipython = "^8.4.0"
+nbconvert = "^6.5.0"
+notebook = "^6.4.12"
 
 [tool.poetry.dev-dependencies]
 
