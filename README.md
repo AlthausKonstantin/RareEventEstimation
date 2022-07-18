@@ -10,19 +10,21 @@ $ pip install rareeventestimation
 
 ## Usage
 
-- TODO
+Have a look at the juypter notebooks in `docs/figures_thesis`.
+These notebooks reproduce the plots an tables in my thesis.
 
-## Contributing
-
-Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
+The data for these notebooks is hosted on [archive.org](https://archive.org/details/konstantinalthaus-rareeventestimation-data) and will be loaded automatically.
+The data is encoded as `.json` files and you can have look at those online before loading them.
+Alternatively you can compile all the data yourself by running the scripts in
+`docs/figures_thesis/data`.
+Each notebooks contains an inactive cell that can load and aggregate
+the locally produced data.
 
 ## License
 
 `rareeventestimation` was created by Konstantin Althaus. It is licensed under the terms of the MIT license.
 
 ## Credits
-
-`rareeventestimation` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
 
 This package contains code I have not written myself.
 
@@ -32,7 +34,11 @@ written by the [ERA Group](https://www.cee.ed.tum.de/era/era-group/) and
 licensed under the MIT license. I have added minor changes.
 
 ### Code from Dr. Fabian Wagner
-All files in `rareeventestimation/src/enkf` are written by [Dr. Fabian Wagner](https://www-m2.ma.tum.de/bin/view/Allgemeines/FabianWagner). I have added minor changes.
+All files in `rareeventestimation/src/enkf` and `src/rareeventestimation/problem/diffusion.py` are written by [Dr. Fabian Wagner](https://www-m2.ma.tum.de/bin/view/Allgemeines/FabianWagner). I have added minor changes.
 
+### Stackoverflow
+I have used several snippets from the almighty community on [stackoverflow](https://stackoverflow.com).
+
+`rareeventestimation` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
 
 
