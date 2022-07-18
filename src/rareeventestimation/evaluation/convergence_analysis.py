@@ -394,18 +394,18 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
     df_agg.reset_index(inplace=True)
     return df_agg
 
-def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie/enkf_sim",
-                                  "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie/sis_sim"},
-                     df_dir = "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation_data Kopie",
-                     df_names ={"df": "benchmark_toy_problems_processed.pkl",
-                                "df_agg": "benchmark_toy_problems_aggregated.pkl"},
+def get_benchmark_df(data_dirs = {"enkf":"docs/benchmarking/data/enkf_sim",
+                                  "sis":"docs/benchmarking/data/sis_sim"},
+                     df_dir = "docs/benchmarking/data",
+                     df_names ={"df": "benchmark_toy_problems_processed.json",
+                                "df_agg": "benchmark_toy_problems_aggregated.json"},
                      force_reload=False)-> tuple:
     """Custom function to load benchmark simultions.
 
     Args:
-        data_dirs (dict, optional): Paths to simulations. Defaults to {"enkf":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/enkf_sim", "sis":"/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/sis_sim"}.
-        df_dir (str, optional): Look here for pickled results before loading. Defaults to "/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data".
-        force_reload (bool, optional): If true, don't look for pickled results.
+        data_dirs (dict, optional): Paths to simulations. Defaults to {"enkf":"docs/benchmarking/data/enkf_sim", "sis":"docs/benchmarking/data/sis_sim"}.
+        df_dir (str, optional): Look here for jsond results before loading. Defaults to "docs/benchmarking/data".
+        force_reload (bool, optional): If true, don't look for json'd results.
 
     Returns:
         tuple: (dataset, aggregated dataset)
@@ -436,12 +436,12 @@ def get_benchmark_df(data_dirs = {"enkf":"/Users/konstantinalthaus/Documents/Mas
                 df_agg = pd.concat([df_agg, this_df_agg],ignore_index=True)
         # recast solver nmaes for plotting
         df = df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
-        df.to_pickle(path_df)
+        df.to_json(path_df)
         df_agg = df_agg.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
-        df_agg.to_pickle(path_df_agg)
+        df_agg.to_json(path_df_agg)
     else:
-        df = pd.read_pickle(path_df)
-        df_agg = pd.read_pickle(path_df_agg)
+        df = pd.read_json(path_df)
+        df_agg = pd.read_json(path_df_agg)
     return df, df_agg
 
 def force_bm_names(row:pd.Series, name= "Solver", specification="mixture_model") -> pd.Series:

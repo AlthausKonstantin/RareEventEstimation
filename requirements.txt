@@ -1,7 +1,0 @@
-numpy 
-scipy 
-pandas 
-plotly 
-prettytable 
-Pillow
-argparse

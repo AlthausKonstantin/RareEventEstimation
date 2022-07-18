@@ -237,7 +237,7 @@ def get_continuous_color(colorscale, intermed):
 def sr_to_color_dict(sr: pd.Series, color_scale_name="Viridis") -> dict:
     keys = sr.unique()
     arr = keys - amin(keys)
-    arr /= amax(arr)
+    arr = arr /amax(arr)
     vals = get_color(color_scale_name, arr)
     return dict(zip([str(k) for k in keys], vals))
 

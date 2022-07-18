@@ -145,7 +145,7 @@ dmypy.json
 # data
 docs/benchmarking/data/**/*.csv
 docs/figures/data/*.csv
-docs/figures/data/*.pkl
+docs/figures/data/*.json
 **/*.DS_Store
 docs/.DS_Store
-**/*.pkl
+**/*.json
