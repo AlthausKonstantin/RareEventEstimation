@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.2 (05/97/2022)
+## v0.1.2 (05/07/2022)
 
 - added web-links to `pyproject.toml`.
 
