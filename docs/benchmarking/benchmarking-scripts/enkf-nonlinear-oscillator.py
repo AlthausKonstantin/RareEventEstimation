@@ -4,7 +4,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dir", type=str,
-                    default="./docs/benchmarking/data/cbree_sim/nonlinear_oscillator")
+                    default="./docs/benchmarking/data/enkf_sim_oscillator")
 
 args = parser.parse_args()
 
