@@ -5,7 +5,7 @@ __version__ = version("rareeventestimation")
 from rareeventestimation.solver import CBREE, ENKF, SIS, CBREECache
 
 from rareeventestimation.problem.problem import Problem, NormalProblem
-from rareeventestimation.problem.toy_problems import make_fujita_rackwitz, make_linear_problem, prob_convex, problems_highdim, problems_lowdim
+from rareeventestimation.problem.toy_problems import make_fujita_rackwitz, make_linear_problem, prob_convex, problems_highdim, problems_lowdim, prob_nonlin_osc
 from rareeventestimation.problem.diffusion import diffusion_problem
 from rareeventestimation.solution import Solution
 from rareeventestimation.mixturemodel import GaussianMixture, VMFNMixture
@@ -14,4 +14,4 @@ from rareeventestimation.sis.SIS_aCS import SIS_aCS
 from rareeventestimation.evaluation.convergence_analysis import *
 from rareeventestimation.evaluation.visualization import *
 from rareeventestimation.utilities import *
-from rareeventestimation.problem.flowrate.log_normal_field import LogNormalField
+from rareeventestimation.problem.flowrate_problem import make_flowrate_problem, DiffusionPDE, LogNormalField
