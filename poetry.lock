@@ -1003,6 +1003,21 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 py = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
+name = "scikit-fem"
+version = "7.0.1"
+description = "Simple finite element assemblers"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+numpy = "*"
+scipy = "*"
+
+[package.extras]
+all = ["meshio (>=4.0.4)", "matplotlib"]
+
+[[package]]
 name = "scipy"
 version = "1.9.3"
 description = "Fundamental algorithms for scientific computing in Python"
@@ -1211,7 +1226,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "7524c1dbba085562c5e9280001aecd44306be27537f3e197e59de1396a038372"
+content-hash = "a4756a99fc6af46ca901f5140172483872863fc4a40ef3f44a726dc6eae06680"
 
 [metadata.files]
 anyio = [
@@ -2140,6 +2155,10 @@ pyzmq = [
     {file = "pyzmq-24.0.1-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:44e706bac34e9f50779cb8c39f10b53a4d15aebb97235643d3112ac20bd577b4"},
     {file = "pyzmq-24.0.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:687700f8371643916a1d2c61f3fdaa630407dd205c38afff936545d7b7466066"},
     {file = "pyzmq-24.0.1.tar.gz", hash = "sha256:216f5d7dbb67166759e59b0479bca82b8acf9bed6015b526b8eb10143fb08e77"},
+]
+scikit-fem = [
+    {file = "scikit-fem-7.0.1.tar.gz", hash = "sha256:0b568fd3d73b527ff41b770e17ada1d9187dd6c774cbefb0b6cd9fb5b5a3eb87"},
+    {file = "scikit_fem-7.0.1-py3-none-any.whl", hash = "sha256:6a5c708f6bdf9e466c49a310970c2dd5c462b5b8131f53eb0361b5b53ea05215"},
 ]
 scipy = [
     {file = "scipy-1.9.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1884b66a54887e21addf9c16fb588720a8309a57b2e258ae1c7986d4444d3bc0"},
