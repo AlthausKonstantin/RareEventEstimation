@@ -7,10 +7,7 @@ parser.add_argument(
     "--dir", type=str, default="./docs/benchmarking/data/cbree_sim/nonlinear_oscillator")
 parser.add_argument("--start",
                     type=int,
-                    default=1)
-parser.add_argument("--stop",
-                    type=int,
-                    default=12)
+                    default=13)
 args = parser.parse_args()
 
 
