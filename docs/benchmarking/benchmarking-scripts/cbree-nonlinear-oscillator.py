@@ -56,7 +56,7 @@ def main():
     for problem in problem_list:
         for i, solver in enumerate(solver_list):
             for s in sample_sizes:
-                if counter >= args.start and counter <= args.stop:
+                if counter >= args.start:
                     print(
                         f"({counter}/{total}) {problem.name}, {s} Samples, with {solver.name}")
                     problem.set_sample(s, seed=s)
