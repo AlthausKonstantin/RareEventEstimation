@@ -14,7 +14,7 @@ args = parser.parse_args()
 keywords = {
     "stepsize_tolerance": [1, 2],
     "mixture_model": ["GM", "vMFNM"],
-    "cvar_tgt": [2],
+    "cvar_tgt": [1, 2, 5, 7, 10],
     "lip_sigma": [1],
     "tgt_fun": ["algebraic"]}
 
