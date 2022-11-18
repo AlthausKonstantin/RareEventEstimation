@@ -8,7 +8,7 @@ parser.add_argument("--dir", type=str,
 args = parser.parse_args()
 # Set up solvers
 # num_runs ≥ (1-pf)/(pf*cvar_tgt^2)=(1-1e-4)/(1e-4 *0.05^2)~4*1e6
-num_runs = 1e7
+num_runs = int(1e7)
 solver_list = [ree.CMC(num_runs, seed=1, verbose=True)]
 
 # set up problems
