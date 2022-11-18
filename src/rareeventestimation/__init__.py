@@ -2,7 +2,7 @@
 import imp
 from importlib.metadata import version
 __version__ = version("rareeventestimation")
-from rareeventestimation.solver import CBREE, ENKF, SIS, CBREECache
+from rareeventestimation.solver import CBREE, ENKF, SIS, CBREECache, CMC
 
 from rareeventestimation.problem.problem import Problem, NormalProblem
 from rareeventestimation.problem.toy_problems import make_fujita_rackwitz, make_linear_problem, prob_convex, problems_highdim, problems_lowdim, prob_nonlin_osc

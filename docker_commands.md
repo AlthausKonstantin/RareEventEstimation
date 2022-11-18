@@ -13,3 +13,10 @@
     docker run  -it --rm -v "$(pwd)"/data/sis_flow_rate:/docs/benchmarking/data/sis_flow_rate rareeventestimation:latest sis_run_flowrate.sh
     
     docker run  -it --rm -v "$(pwd)"/data/sis_sim_oscillator:/docs/benchmarking/data/sis_sim_oscillator rareeventestimation:latest sis_run_oscillator.sh
+
+
+# Run script in container in background
+
+    nnohup sudo docker run --rm -v "$(pwd)"/data/cbree_sim/nonlinear_oscillator:/docs/benchmarking/data/cbree_sim/nonlinear_oscillator rareeventestimation:latest cbree_run_oscillator.sh  &> cbree_oscillator_log 
+    
+    &ohup sudo docker run --rm -v "$(pwd)"/data/cmc_flow_rate:/docs/benchmarking/data/cmc-flow-rate rareeventestimation:latest cmc_run_oscillator.sh  &> cmc_oscillator_log &

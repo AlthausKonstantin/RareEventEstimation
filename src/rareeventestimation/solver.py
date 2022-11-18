@@ -1,4 +1,5 @@
 """Definition of the solvers for rare event estimation."""
+import traceback
 from copy import deepcopy
 from dataclasses import dataclass
 from distutils.log import warn
@@ -10,7 +11,7 @@ from typing import Optional
 from warnings import warn
 from numpy import (amax, arange, arctan, array, average, concatenate, cov, diff, exp, insert,
                    invert, isfinite, isnan, log, log1p, maximum, minimum, nan,
-                   ndarray, pi, prod, sqrt, tanh, tril, where, sum, zeros, mean, asarray)
+                   ndarray, pi, prod, sqrt, tanh, tril, where, sum, zeros, ones, mean, asarray)
 from numpy.linalg import norm, inv
 from numpy.random import default_rng, seed
 from prettytable import PrettyTable
@@ -23,7 +24,7 @@ from rareeventestimation.mixturemodel import GaussianMixture, MixtureModel, VMFN
 from rareeventestimation.problem.problem import NormalProblem, Problem
 from rareeventestimation.solution import Solution
 from rareeventestimation.utilities import (gaussian_logpdf, get_slope, importance_sampling,
-                       my_log_cvar, my_softmax)
+                                           my_log_cvar, my_softmax)
 
 from rareeventestimation.enkf.EnKF_rare_events import EnKF_rare_events
 from rareeventestimation.era.ERANataf import ERANataf
@@ -32,13 +33,14 @@ from rareeventestimation.sis.SIS_aCS import SIS_aCS
 from rareeventestimation.sis.SIS_GM import SIS_GM
 import os
 
+
 @dataclass
 class CBREECache:
     """A cache to hold all information of the current CBREE step.
-    
+
     J is the number of samples.
     d is the number of dimensions.
-    
+
     Attributes:
         ensemble (ndarray): Current sample. Shape is (J,d)
         lsf_evals (ndarray): LSF evaluated in current sample. Shape is (N,)
@@ -63,8 +65,8 @@ class CBREECache:
         num_lsf_evals (int): Number of calls to the limit state functions so far.
         msg (str): Message for this step
     """
-    
-    ensemble: ndarray 
+
+    ensemble: ndarray
     lsf_evals: ndarray
     e_fun_evals: ndarray
     weighted_mean: ndarray = None
@@ -74,21 +76,21 @@ class CBREECache:
     t_step: float = 0.5
     cvar_is_weights: float = nan
     mixture_model: MixtureModel = MixtureModel(1)
-    converged:bool = False
+    converged: bool = False
     iteration: int = 0
     slope_cvar: float = nan
-    sfp_slope:float = nan
-    estimate:float = 0.0
+    sfp_slope: float = nan
+    estimate: float = 0.0
     estimate_uniform_avg: float = 0.0
-    estimate_sqrt_avg:float = 0.0
-    estimate_cvar_avg:float = 0.0
-    sfp:float=0.0
-    ess:float= nan
-    num_lsf_evals:int = 0
-    msg:str = ""
+    estimate_sqrt_avg: float = 0.0
+    estimate_cvar_avg: float = 0.0
+    sfp: float = 0.0
+    ess: float = nan
+    num_lsf_evals: int = 0
+    msg: str = ""
 
 
-def flatten_cache_list(cache_list:list, attrs=None)->dict:
+def flatten_cache_list(cache_list: list, attrs=None) -> dict:
     """Transform list of CBREECaches in dict with list of specified attributes.
 
     Args:
@@ -135,8 +137,8 @@ class Solver:
             copy_of_me = deepcopy(self)
             copy_of_me.set_options(options)
             return copy_of_me
-        
-   
+
+
 class CBREE(Solver):
     """
     Instances of this class hold all the options for consensus based sampling.
@@ -145,9 +147,9 @@ class CBREE(Solver):
     Use method solve to apply consensus based sampling to a problem.
     """
 
-    def __init__(self, 
+    def __init__(self,
                  stepsize_adaptivity=True,
-                 stepsize_tolerance =0.5,
+                 stepsize_tolerance=0.5,
                  num_steps=100,
                  tgt_fun="algebraic",
                  observation_window=5,
@@ -229,28 +231,26 @@ class CBREE(Solver):
             self.stepsize_adaptivity = stepsize_adaptivity
         else:
             assert stepsize_adaptivity > 0, f"sigma_adaptivity must be either a positive number or `True`. I got '{sigma_adaptivity}'"
-            self.t_step = stepsize_adaptivity # constant stepsize
+            self.t_step = stepsize_adaptivity  # constant stepsize
             self.stepsize_adaptivity = False
-        
-        
+
         if isinstance(sigma_adaptivity, str):
-            assert sigma_adaptivity  in ["cvar", "sfp"]
-            self.sigma = 0 # initial sigma
+            assert sigma_adaptivity in ["cvar", "sfp"]
+            self.sigma = 0  # initial sigma
             self.sigma_adaptivity = sigma_adaptivity
         else:
             assert sigma_adaptivity > 0, f"sigma_adaptivity must be either `cvar`, `sfp` or `True`. I got '{sigma_adaptivity}'"
-            self.sigma = sigma_adaptivity # constant sigma
+            self.sigma = sigma_adaptivity  # constant sigma
             self.sigma_adaptivity = "constant"
-            
+
         if beta_adaptivity is True:
-            self.beta = 1 # initial beta, will be changed
+            self.beta = 1  # initial beta, will be changed
             self.beta_adaptivity = beta_adaptivity
         else:
             assert beta_adaptivity > 0, f"beta_adaptivity must be either a positive number or `True`. I got '{beta_adaptivity}'"
-            self.beta = beta_adaptivity # constant beta
+            self.beta = beta_adaptivity  # constant beta
             self.beta_adaptivity = False
-            
-        
+
         self.num_comps = 1  # currently only 1
         self.stepsize_tolerance = stepsize_tolerance
         self.num_steps = num_steps
@@ -281,10 +281,10 @@ class CBREE(Solver):
             return "CBREE"
         else:
             return f"CBREE ({self.cluster_model})"
-    
-    def __log_tgt_fun(self, lsf_evals:ndarray, e_fun_evals:ndarray, sigma:Real, method="sigmoid"):
+
+    def __log_tgt_fun(self, lsf_evals: ndarray, e_fun_evals: ndarray, sigma: Real, method="sigmoid"):
         """Compute log of current target density.
-        
+
         Args:
             lsf_evals (ndarray): LSF evaluated in current sample. Shape is (N,)
             e_fun_evals (ndarray): Energy function of the problem evaluated in current sample. Shape is (N,)
@@ -315,12 +315,12 @@ class CBREE(Solver):
             # 1/2(1+erf(-sigma*lsf)) +e^(-e_fun)
             return univariat_normal.logcdf(-sigma*lsf_evals) - e_fun_evals
         if method == "relu":
-            return -sigma*maximum(0,lsf_evals)**3 - e_fun_evals
-        else: # sigmoid
+            return -sigma*maximum(0, lsf_evals)**3 - e_fun_evals
+        else:  # sigmoid
             # 1/(1+e^sigma*lsf) *e^(-e_fun)
             return -log1p(exp(sigma*lsf_evals)) - e_fun_evals
 
-    def solve(self, prob:Problem) ->  Solution:
+    def solve(self, prob: Problem) -> Solution:
         """Estimate the rare event of `prob`.
 
         Args:
@@ -329,7 +329,7 @@ class CBREE(Solver):
         Returns:
             Solution: Estimate of probability of failure and other results from computation.
         """
-        
+
         # Define counting lsf function, save energy function
         def my_lsf(x):
             my_lsf.counter += prod(x.shape[:-1])
@@ -337,32 +337,34 @@ class CBREE(Solver):
         my_lsf.counter = 0
         self.lsf = my_lsf
         self.e_fun = prob.e_fun
-        
-        #initialize cache
+
+        # initialize cache
         cache = CBREECache(prob.sample,  self.lsf(prob.sample),  self.e_fun(prob.sample),
-                             sigma=self.sigma, beta=self.beta, num_lsf_evals=self.lsf.counter)
+                           sigma=self.sigma, beta=self.beta, num_lsf_evals=self.lsf.counter)
         self.__compute_weights(cache)
         if self.stepsize_adaptivity:
             self.__compute_initial_stepsize(cache)
         else:
             cache.t_step = self.t_step
         cache_list = [cache]
-        
-         # maybe print some info
+
+        # maybe print some info
         if self.verbose:
-            cols = ['Iteration', 'Sigma', "Beta", "Stepsize", "CVAR", "SFP","Comment"]
+            cols = ['Iteration', 'Sigma', "Beta",
+                    "Stepsize", "CVAR", "SFP", "Comment"]
             col_width = amax([len(s) for s in cols])
-            table = PrettyTable(cols, float_format=".5",max_width=col_width, min_width=col_width)
-    
+            table = PrettyTable(cols, float_format=".5",
+                                max_width=col_width, min_width=col_width)
+
         # start iteration
-        msg = "Success" 
+        msg = "Success"
         while not cache_list[-1].converged and cache_list[-1].iteration <= self.num_steps:
             # set stepsize for next two iterations
             if self.stepsize_adaptivity and len(cache_list) > 1 and cache_list[-1].iteration % 2 == 0:
                 self.__update_stepsize(cache_list)
             # set sigma and beta
             self.__update_beta_and_sigma(cache_list[-1])
-            
+
             # perform step
             try:
                 new_cache = self.__perfrom_step(cache_list[-1])
@@ -375,10 +377,10 @@ class CBREE(Solver):
             # maybe prune list
             if not self.save_history and len(cache_list) > self.observation_window:
                 cache_list.pop(0)
-            
+
             # check for convergence
             self.__convergence_check(cache_list)
-            
+
             if self.callback is not None:
                 try:
                     cache_list[-1] = self.callback(cache_list[-1], self)
@@ -389,26 +391,26 @@ class CBREE(Solver):
                     break
             # maybe print info about this iteration
             if self.verbose:
-                table.add_row([cache_list[-1].iteration, 
+                table.add_row([cache_list[-1].iteration,
                               cache_list[-1].sigma,
                               cache_list[-1].beta,
                               log(1/cache_list[-1].t_step),
                               cache_list[-1].cvar_is_weights,
                               cache_list[-1].sfp,
                               cache_list[-2].msg])
-                print(table.get_string(start=len(table.rows)-1, 
+                print(table.get_string(start=len(table.rows)-1,
                                        end=len(table.rows),
-                                       header=cache_list[-1].iteration==1,
+                                       header=cache_list[-1].iteration == 1,
                                        border=False))
         # Set message
         if not cache_list[-1].converged and cache_list[-1].iteration > self.num_steps:
             msg = "Not Converged."
-            
+
         # importance sampling
         for c in cache_list:
             self.__importance_sampling(c)
-        self.__compute_weighted_estimates(cache_list)    
-            
+        self.__compute_weighted_estimates(cache_list)
+
         # build solution
         other = {}
         other["Average Estimate"] = cache_list[-1].estimate_uniform_avg
@@ -418,12 +420,12 @@ class CBREE(Solver):
         other["SFP"] = cache_list[-1].sfp
         tmp = flatten_cache_list(cache_list)
         # correct sigma beta and t_step to match thesis notation
-        tmp["sigma"] = insert(tmp["sigma"],0,0)
-        tmp["beta"] = insert(tmp["beta"],0,nan)
-        tmp["t_step"] = insert(tmp["t_step"],0,nan)
-        
+        tmp["sigma"] = insert(tmp["sigma"], 0, 0)
+        tmp["beta"] = insert(tmp["beta"], 0, nan)
+        tmp["t_step"] = insert(tmp["t_step"], 0, nan)
+
         if self.return_other:
-            other = other|tmp
+            other = other | tmp
         if self.return_caches:
             other["cache_list"] = cache_list
         return Solution(
@@ -436,7 +438,7 @@ class CBREE(Solver):
             num_steps=cache_list[-1].iteration,
             other=other
         )
-        
+
     def __update_beta_and_sigma(self, cache: CBREECache) -> None:
         """Update sigma, beta and ess in cache.
 
@@ -451,13 +453,14 @@ class CBREE(Solver):
         if self.beta_adaptivity:
             self.__update_beta(cache)
 
-        log_tgt_evals = self.__log_tgt_fun(cache.lsf_evals, cache.e_fun_evals, cache.sigma, method=self.tgt_fun)
+        log_tgt_evals = self.__log_tgt_fun(
+            cache.lsf_evals, cache.e_fun_evals, cache.sigma, method=self.tgt_fun)
         weights_ensemble = my_softmax(log_tgt_evals*cache.beta).squeeze()
-        cache.ess = sum(weights_ensemble) ** 2 / sum(weights_ensemble**2) 
-     
-    def __update_sigma_cvar(self, cache:CBREECache) -> None:
+        cache.ess = sum(weights_ensemble) ** 2 / sum(weights_ensemble**2)
+
+    def __update_sigma_cvar(self, cache: CBREECache) -> None:
         """Update `sigma` based on `cvar_tgt`.
-        
+
         Use share of failure particles for update if not enough particles are in failure domain.
 
         Args:
@@ -469,35 +472,39 @@ class CBREE(Solver):
             else:
                 # Define objective function
                 def obj_fun(sigma):
-                    log_approx_evals = self.__log_tgt_fun(cache.lsf_evals, 0.0, sigma, method=self.tgt_fun)
-                    log_approx_evals -= self.__log_tgt_fun(cache.lsf_evals, 0.0, cache.sigma, method=self.tgt_fun)
-                    return (my_log_cvar(log_approx_evals) -self.cvar_tgt)**2
-                
+                    log_approx_evals = self.__log_tgt_fun(
+                        cache.lsf_evals, 0.0, sigma, method=self.tgt_fun)
+                    log_approx_evals -= self.__log_tgt_fun(
+                        cache.lsf_evals, 0.0, cache.sigma, method=self.tgt_fun)
+                    return (my_log_cvar(log_approx_evals) - self.cvar_tgt)**2
+
                 # Minimize objective function
-                opt_sol = minimize_scalar(obj_fun, bounds=[cache.sigma, cache.sigma+self.lip_sigma*log(1/cache.t_step)], method="Bounded")
+                opt_sol = minimize_scalar(obj_fun, bounds=[
+                                          cache.sigma, cache.sigma+self.lip_sigma*log(1/cache.t_step)], method="Bounded")
                 cache.sigma = opt_sol.x
         except Exception as e:
-            msg = f"Failed to update sigma: {str(e)}" 
+            msg = f"Failed to update sigma: {str(e)}"
             if self.verbose:
                 cache.msg += msg
             else:
                 info(f"Iteration {cache.iteration}: {msg}")
-    
-    def __update_sigma_sfp(self, cache:CBREECache) -> None:
+
+    def __update_sigma_sfp(self, cache: CBREECache) -> None:
         """Update `sigma` based on `sfp_tgt`.
-        
+
         Args:
             cache (CBREECache): Cache to be updated.
         """
-        current = sum(cache.lsf_evals <=0) / len(cache.lsf_evals)
+        current = sum(cache.lsf_evals <= 0) / len(cache.lsf_evals)
         delta_max = self.lip_sigma*log(1/cache.t_step)
         if self.sfp_tgt > float_info.epsilon:
-            delta = sqrt(maximum(0,self.sfp_tgt-current)) * delta_max/sqrt(self.sfp_tgt)
+            delta = sqrt(maximum(0, self.sfp_tgt-current)) * \
+                delta_max/sqrt(self.sfp_tgt)
         else:
             delta = 0
         cache.sigma += delta
-    
-    def __update_beta(self, cache:CBREECache) -> None:
+
+    def __update_beta(self, cache: CBREECache) -> None:
         """Compute beta for current ensemble.
 
         Args:
@@ -506,7 +513,8 @@ class CBREE(Solver):
         """
         # Define objective function
         def obj_fun(temperature):
-            log_tgt_evals = self.__log_tgt_fun(cache.lsf_evals,cache.e_fun_evals, cache.sigma, method=self.tgt_fun)
+            log_tgt_evals = self.__log_tgt_fun(
+                cache.lsf_evals, cache.e_fun_evals, cache.sigma, method=self.tgt_fun)
             weights = my_softmax(log_tgt_evals*temperature)
             val = sum(weights)**2 / sum(weights**2) - self.ess_tgt*len(weights)
             return val
@@ -525,8 +533,8 @@ class CBREE(Solver):
                 cache.msg += msg
             else:
                 info(f"Iteration {cache.iteration}: {msg}")
-    
-    def __compute_weights(self, cache:CBREECache, return_weights=False) -> Optional[ndarray]:
+
+    def __compute_weights(self, cache: CBREECache, return_weights=False) -> Optional[ndarray]:
         """Compute weighted mean and covariance.
 
         Args:
@@ -539,18 +547,22 @@ class CBREE(Solver):
         Returns:
             Optional[ndarray]: Normalized weights.
         """
-        log_tgt_evals = self.__log_tgt_fun(cache.lsf_evals, cache.e_fun_evals, cache.sigma, method=self.tgt_fun)
+        log_tgt_evals = self.__log_tgt_fun(
+            cache.lsf_evals, cache.e_fun_evals, cache.sigma, method=self.tgt_fun)
         weights_ensemble = my_softmax(log_tgt_evals*cache.beta).squeeze()
-        cache.weighted_mean = average(cache.ensemble, axis=0, weights=weights_ensemble)
-        cache.weighted_cov = cov(cache.ensemble, aweights=weights_ensemble, ddof=0, rowvar=False)
+        cache.weighted_mean = average(
+            cache.ensemble, axis=0, weights=weights_ensemble)
+        cache.weighted_cov = cov(
+            cache.ensemble, aweights=weights_ensemble, ddof=0, rowvar=False)
         if not isfinite(cache.weighted_cov).all():
-            raise ValueError("Weighted covariance contains non-finite elements.")
+            raise ValueError(
+                "Weighted covariance contains non-finite elements.")
         if return_weights:
             return weights_ensemble
 
-    def __perfrom_step(self, cache:CBREECache) -> CBREECache:
+    def __perfrom_step(self, cache: CBREECache) -> CBREECache:
         """Perform a consensus based sampling step.
-        
+
         If `resample` is True and the mixture model is "vMFNM", fit a 
         von Mises Fisher Nakagami mixture to the ensemble and resample the ensemble from this model.
 
@@ -559,37 +571,45 @@ class CBREE(Solver):
 
         Returns:
             CBREECache: Cache with new ensemble.
-        """        
+        """
         if self.resample and self.mixture_model == "vMFNM":
-            m_noise= (1 - cache.t_step) * cache.weighted_mean
-            c_noise= (1 - cache.t_step**2) * (1+cache.beta) * cache.weighted_cov
-            ensemble_new = cache.t_step * cache.ensemble + self.rng.multivariate_normal(m_noise, c_noise, cache.ensemble.shape[0])
-            model= VMFNMixture(1)
+            m_noise = (1 - cache.t_step) * cache.weighted_mean
+            c_noise = (1 - cache.t_step**2) * \
+                (1+cache.beta) * cache.weighted_cov
+            ensemble_new = cache.t_step * cache.ensemble + \
+                self.rng.multivariate_normal(
+                    m_noise, c_noise, cache.ensemble.shape[0])
+            model = VMFNMixture(1)
             model.fit(ensemble_new)
             ensemble_new = model.sample(cache.ensemble.shape[0], rng=self.rng)
             log_pdf_evals = model.logpdf(ensemble_new)
         else:
-            m_noise= (1 - cache.t_step) * cache.weighted_mean
-            c_noise= (1 - cache.t_step**2) * (1+cache.beta) * cache.weighted_cov
-            ensemble_new = cache.t_step * cache.ensemble + self.rng.multivariate_normal(m_noise, c_noise, cache.ensemble.shape[0])
+            m_noise = (1 - cache.t_step) * cache.weighted_mean
+            c_noise = (1 - cache.t_step**2) * \
+                (1+cache.beta) * cache.weighted_cov
+            ensemble_new = cache.t_step * cache.ensemble + \
+                self.rng.multivariate_normal(
+                    m_noise, c_noise, cache.ensemble.shape[0])
             m_new = average(ensemble_new, axis=0)
             c_new = cov(ensemble_new, ddof=1, rowvar=False)
             log_pdf_evals = multivariate_normal.logpdf(
                 ensemble_new, mean=m_new, cov=c_new)
             model = MixtureModel(1)
 
-        cache_new = CBREECache(ensemble_new, self.lsf(ensemble_new), self.e_fun(ensemble_new), mixture_model=model)
-        cache_new.cvar_is_weights = my_log_cvar(-cache_new.e_fun_evals - log_pdf_evals, multiplier=(cache_new.lsf_evals<=0))
+        cache_new = CBREECache(ensemble_new, self.lsf(
+            ensemble_new), self.e_fun(ensemble_new), mixture_model=model)
+        cache_new.cvar_is_weights = my_log_cvar(
+            -cache_new.e_fun_evals - log_pdf_evals, multiplier=(cache_new.lsf_evals <= 0))
         cache_new.iteration = cache.iteration + 1
         cache_new.converged = cache.converged
-        cache_new.sigma=cache.sigma
+        cache_new.sigma = cache.sigma
         cache_new.beta = cache.beta
         cache_new.t_step = cache.t_step
         cache_new.num_lsf_evals = self.lsf.counter
         self.__compute_weights(cache_new)
         return cache_new
 
-    def __convergence_check(self, cache_list:list) -> None:
+    def __convergence_check(self, cache_list: list) -> None:
         """Check for convergence and/or divergence and save result in last cache.
 
         Args:
@@ -600,105 +620,110 @@ class CBREE(Solver):
         # compute and save quantities of interest
         histories = flatten_cache_list(cache_list[-self.observation_window:],
                                        attrs=["ensemble", "lsf_evals", "cvar_is_weights"])
-        histories["SFP"] = sum(histories["lsf_evals"]<=0, axis = 1)
-        cache_list[-1].sfp =sum(cache_list[-1].lsf_evals <=0) / len(cache_list[-1].lsf_evals) 
+        histories["SFP"] = sum(histories["lsf_evals"] <= 0, axis=1)
+        cache_list[-1].sfp = sum(cache_list[-1].lsf_evals <=
+                                 0) / len(cache_list[-1].lsf_evals)
         cache_list[-1].slope_cvar = get_slope(histories["cvar_is_weights"])
         cache_list[-1].sfp_slope = get_slope(histories["SFP"])
-       
-        
+
         # Check convergence
         if self.sigma_adaptivity == "cvar":
-            cache_list[-1].converged = (cache_list[-1].cvar_is_weights <= self.cvar_tgt) and self.convergence_check
+            cache_list[-1].converged = (cache_list[-1].cvar_is_weights <=
+                                        self.cvar_tgt) and self.convergence_check
             if cache_list[-1].converged:
                 cache_list[-1].msg += "Converged with given `cvar_tgt`."
             if self.divergence_check and iteration >= self.observation_window:
-                sfp_mean = average([c.sfp for c in cache_list[-self.observation_window:]])
-                cache_list[-1].converged = cache_list[-1].converged or (cache_list[-1].slope_cvar > 0.0 and sfp_mean>=self.sfp_tgt)
+                sfp_mean = average(
+                    [c.sfp for c in cache_list[-self.observation_window:]])
+                cache_list[-1].converged = cache_list[-1].converged or (
+                    cache_list[-1].slope_cvar > 0.0 and sfp_mean >= self.sfp_tgt)
                 if cache_list[-1].converged:
                     cache_list[-1].msg += "Converged due to `divergence_check`."
 
         if self.sigma_adaptivity == "sfp":
-            cache_list[-1].converged = (cache_list[-1].sfp >= self.sfp_tgt)  and self.convergence_check
+            cache_list[-1].converged = (cache_list[-1].sfp >=
+                                        self.sfp_tgt) and self.convergence_check
             if cache_list[-1].converged:
-                cache_list[-1].msg += "Converged with given `sfp_tgt`."      
-    
-    def __update_stepsize(self, cache_list:list) -> None:
+                cache_list[-1].msg += "Converged with given `sfp_tgt`."
+
+    def __update_stepsize(self, cache_list: list) -> None:
         """Compute new stepsize, save it in `cache_list[-1].t_step`.
-        
+
         Assume that the stepsize `t_step` has been constant for the last two caches.
 
         Args:
             cache_list (list): cache list of length at least 2.
         """
         # compute higher order approximation of mean and covariance
-        ch1 = cache_list[-2] # 1. stage
-        ch2 = cache_list[-1] # 2. stage
-        h = -log(ch1.t_step) # half stepsize of 2 stage method
+        ch1 = cache_list[-2]  # 1. stage
+        ch2 = cache_list[-1]  # 2. stage
+        h = -log(ch1.t_step)  # half stepsize of 2 stage method
         # compute linear combination of means
         phi = (exp(-2*h) - 1)/(-2*h)
-        bm1 =phi - 2* (phi-1) / (-2*h)
-        bm2 = 2* (phi-1) / (-2*h)
+        bm1 = phi - 2 * (phi-1) / (-2*h)
+        bm2 = 2 * (phi-1) / (-2*h)
         m1 = average(ch1.ensemble, axis=0)
         m2 = average(ch2.ensemble, axis=0)
-        m2_hat =2*h*(bm1*m1+ bm2*m2)
-        
+        m2_hat = 2*h*(bm1*m1 + bm2*m2)
+
         # compute linear combination of covs
         phi = (exp(-4*h) - 1)/(-2*h)
-        bc1 =phi - 2* (phi-1) / (-2*h)
-        bc2 = 2* (phi-1) / (-2*h)
+        bc1 = phi - 2 * (phi-1) / (-2*h)
+        bc2 = 2 * (phi-1) / (-2*h)
         c1 = cov(ch1.ensemble, ddof=1, rowvar=False)
         c2 = cov(ch2.ensemble, ddof=1, rowvar=False)
-        c2_hat =2*h*(bc1*c1+ bc2*c2)
-            
-        # Compute new stepsize 
-        x = concatenate((m2[None,...], tril(c2)))
-        x_hat = concatenate((m2_hat[None,...], tril(c2_hat)))
+        c2_hat = 2*h*(bc1*c1 + bc2*c2)
+
+        # Compute new stepsize
+        x = concatenate((m2[None, ...], tril(c2)))
+        x_hat = concatenate((m2_hat[None, ...], tril(c2_hat)))
         delta = x - x_hat
-        w = self.stepsize_tolerance + self.stepsize_tolerance*maximum(abs(x), abs(x_hat))
+        w = self.stepsize_tolerance + \
+            self.stepsize_tolerance*maximum(abs(x), abs(x_hat))
         err = sqrt(average((delta/w)**2))
-        h_min= 1e-5
-        h_max= 100
+        h_min = 1e-5
+        h_max = 100
         fac = 0.9
         q = fac * sqrt(1/err)
         t_new = maximum(exp(-h_max), minimum(exp(-h_min), exp(-q*h)))
         ch2.t_step = t_new
 
-    def __compute_initial_stepsize(self, cache:CBREECache) -> None:
+    def __compute_initial_stepsize(self, cache: CBREECache) -> None:
         """Compute initial stepsize `cache.t_step`
 
         Args:
             cache (CBREECache): Cache to be updated.
         """
         # first guess
-        m0 = average(cache.ensemble, axis=0) 
-        c0 = cov(cache.ensemble,rowvar=False, ddof=1)
-        x0 = concatenate((m0[None,...], tril(c0))) # initial value
+        m0 = average(cache.ensemble, axis=0)
+        c0 = cov(cache.ensemble, rowvar=False, ddof=1)
+        x0 = concatenate((m0[None, ...], tril(c0)))  # initial value
         w = self.stepsize_tolerance + self.stepsize_tolerance*abs(x0)
         d0 = sqrt(average((x0/w)**2))
         f0_m = -m0 + cache.weighted_mean
         f0_c = -2*c0 + 2*cache.weighted_cov
-        f0 = concatenate((f0_m[None,...], tril(f0_c))) # initial rhs-eval
+        f0 = concatenate((f0_m[None, ...], tril(f0_c)))  # initial rhs-eval
         d1 = sqrt(average((f0/w)**2))
         h0 = 0.01*d0/d1
-        cache.t_step = exp(-h0) # first guess
-        
+        cache.t_step = exp(-h0)  # first guess
+
         # Euler step
         self.__update_beta_and_sigma(cache)
         cache_new = self.__perfrom_step(cache)
-        
+
         # Approximate second derivative
-        m2 = average(cache_new.ensemble, axis=0) 
-        c2 = cov(cache_new.ensemble,rowvar=False, ddof=1)
+        m2 = average(cache_new.ensemble, axis=0)
+        c2 = cov(cache_new.ensemble, rowvar=False, ddof=1)
         f2_m = -m2 + cache_new.weighted_mean
         f2_c = -2*c2 + 2*cache_new.weighted_cov
-        f2 = concatenate((f2_m[None,...], tril(f2_c)))
-        d2 =  sqrt(average(((f0 - f2/w))**2)) / h0
-        
+        f2 = concatenate((f2_m[None, ...], tril(f2_c)))
+        d2 = sqrt(average(((f0 - f2/w))**2)) / h0
+
         # second guess
-        h1 = sqrt(0.01 / maximum(d1,d2))
-        cache.t_step = exp(-maximum(100*h0,h1))
+        h1 = sqrt(0.01 / maximum(d1, d2))
+        cache.t_step = exp(-maximum(100*h0, h1))
         cache.num_lsf_evals = cache_new.num_lsf_evals
-    
+
     def __importance_sampling(self, cache: CBREECache) -> None:
         """Compute failure probability and save it in `cache.estimate`.
 
@@ -711,18 +736,21 @@ class CBREE(Solver):
             if self.mixture_model == "vMFNM":
                 cache.mixture_model = VMFNMixture(1)
                 cache.mixture_model.fit(cache.ensemble)
-                cache.ensemble = cache.mixture_model.sample(cache.ensemble.shape[0], rng=self.rng)
+                cache.ensemble = cache.mixture_model.sample(
+                    cache.ensemble.shape[0], rng=self.rng)
                 cache.lsf_evals = self.lsf(cache.ensemble)
                 cache.num_lsf_evals = self.lsf.counter
                 aux_logpdf = cache.mixture_model.logpdf(cache.ensemble)
             else:
                 aux_logpdf = multivariate_normal.logpdf(cache.ensemble,
-                                                    mean=average(cache.ensemble,axis=0),
-                                                    cov=cov(cache.ensemble,rowvar=False, ddof=1))
+                                                        mean=average(
+                                                            cache.ensemble, axis=0),
+                                                        cov=cov(cache.ensemble, rowvar=False, ddof=1))
         tgt_logpdf = gaussian_logpdf(cache.ensemble)
-        cache.estimate = importance_sampling(tgt_logpdf, aux_logpdf, cache.lsf_evals, logpdf=True)    
+        cache.estimate = importance_sampling(
+            tgt_logpdf, aux_logpdf, cache.lsf_evals, logpdf=True)
 
-    def __compute_weighted_estimates(self, cache_list:list) -> None:
+    def __compute_weighted_estimates(self, cache_list: list) -> None:
         """Compute weighted failure probability estimates.
 
         Args:
@@ -730,17 +758,18 @@ class CBREE(Solver):
                 Save results in `cache_list[-1]`.
         """
         k = minimum(len(cache_list), self.observation_window)
-        sqrt_w =  sqrt(arange(k))
+        sqrt_w = sqrt(arange(k))
         cvar_w = 1 / array([c.cvar_is_weights**2 for c in cache_list[-k:]])
         cvar_w[~isfinite(cvar_w)] = 0.0
         pfs = [c.estimate for c in cache_list[-k:]]
         cache_list[-1].estimate_uniform_avg = average(pfs)
-        cache_list[-1].estimate_cvar_avg = average(pfs, weights=cvar_w)  if sum(cvar_w) > 0  else 0.0
+        cache_list[-1].estimate_cvar_avg = average(
+            pfs, weights=cvar_w) if sum(cvar_w) > 0 else 0.0
         cache_list[-1].estimate_sqrt_avg = average(pfs, weights=sqrt_w)
-        
-    def solve_from_caches(self, cache_list:list)-> Solution:
+
+    def solve_from_caches(self, cache_list: list) -> Solution:
         """Simulate `solve` from existing list of caches.
-        
+
         Can be used to test behavior of different stopping criteria.        
 
         Args:
@@ -753,53 +782,56 @@ class CBREE(Solver):
         cache_list_new = [cache_list.pop(0)]
         # maybe print some info
         if self.verbose:
-            cols = ['Iteration', 'Sigma', "Beta", "Stepsize", "CVAR", "SFP","Comment"]
+            cols = ['Iteration', 'Sigma', "Beta",
+                    "Stepsize", "CVAR", "SFP", "Comment"]
             col_width = amax([len(s) for s in cols])
-            table = PrettyTable(cols, float_format=".5",max_width=col_width, min_width=col_width)
-    
+            table = PrettyTable(cols, float_format=".5",
+                                max_width=col_width, min_width=col_width)
+
         # start iteration
-        msg = "Success" 
-        while not cache_list_new[-1].converged and cache_list_new[-1].iteration <= self.num_steps and len(cache_list)>0:
+        msg = "Success"
+        while not cache_list_new[-1].converged and cache_list_new[-1].iteration <= self.num_steps and len(cache_list) > 0:
             # perform step
             cache_list_new.append(cache_list.pop(0))
-            
+
             # maybe prune list
             if not self.save_history and len(cache_list_new) > self.observation_window:
                 cache_list_new.pop(0)
-            
+
             # check for convergence
             self.__convergence_check(cache_list_new)
             if self.callback is not None:
                 try:
-                    cache_list_new[-1] = self.callback(cache_list_new[-1], self)
+                    cache_list_new[-1] = self.callback(
+                        cache_list_new[-1], self)
                 except Exception as e:
                     msg = str(e)
                     if not self.verbose:
                         warn(str(e))
                     break
-            
+
             # maybe print info about this iteration
             if self.verbose:
-                table.add_row([cache_list_new[-1].iteration, 
+                table.add_row([cache_list_new[-1].iteration,
                               cache_list_new[-1].sigma,
                               cache_list_new[-1].beta,
                               log(1/cache_list_new[-1].t_step),
                               cache_list_new[-1].cvar_is_weights,
                               cache_list_new[-1].sfp,
                               cache_list_new[-2].msg])
-                print(table.get_string(start=len(table.rows)-1, 
+                print(table.get_string(start=len(table.rows)-1,
                                        end=len(table.rows),
-                                       header=cache_list_new[-1].iteration==1,
+                                       header=cache_list_new[-1].iteration == 1,
                                        border=False))
         # Set message
         if not cache_list_new[-1].converged and cache_list_new[-1].iteration > self.num_steps:
             msg = "Not Converged."
-            
+
         # importance sampling
         for c in cache_list_new:
             self.__importance_sampling(c)
-        self.__compute_weighted_estimates(cache_list_new)    
-            
+        self.__compute_weighted_estimates(cache_list_new)
+
         # build solution
         other = {}
         other["Average Estimate"] = cache_list_new[-1].estimate_uniform_avg
@@ -809,12 +841,12 @@ class CBREE(Solver):
         other["SFP"] = cache_list_new[-1].sfp
         tmp = flatten_cache_list(cache_list_new)
         # correct sigma beta and t_step to match thesis notation
-        tmp["sigma"] = insert(tmp["sigma"],0,0)
-        tmp["beta"] = insert(tmp["beta"],0,nan)
-        tmp["t_step"] = insert(tmp["t_step"],0,nan)
-        
+        tmp["sigma"] = insert(tmp["sigma"], 0, 0)
+        tmp["beta"] = insert(tmp["beta"], 0, nan)
+        tmp["t_step"] = insert(tmp["t_step"], 0, nan)
+
         if self.return_other:
-            other = other|tmp
+            other = other | tmp
         if self.return_caches:
             other["cache_list"] = cache_list_new
         return Solution(
@@ -827,14 +859,14 @@ class CBREE(Solver):
             num_steps=cache_list_new[-1].iteration,
             other=other
         )
-        
-        
+
+
 class ENKF(Solver):
     """ Wrapper for code from Fabian Wagner."""
 
     def __init__(self, **kwargs) -> None:
         """"Make instance of ENKF and handle all keywords.
-        
+
         Optional Keyword Arguments:
             cvar_tgt:  Stop if coefficient of variation is smaller than this, Defaults to 1.
             mixture_model: Which model is used to for resampling. Defaults to "GM".
@@ -849,17 +881,18 @@ class ENKF(Solver):
         super().__init__()
         self.cvar_tgt = kwargs.get("cvar_tgt", 1.0)
         self.mixture_model = kwargs.get("mixture_model", "GM")
-        assert self.mixture_model in ["GM", "vMFNM"], "Importance sampling distribution must be 'GM' or 'vMFNM'."
+        assert self.mixture_model in [
+            "GM", "vMFNM"], "Importance sampling distribution must be 'GM' or 'vMFNM'."
         self.num_steps = kwargs.get("num_steps", 100)
         self.num_comps = kwargs.get("num_comps", 1)
         self.localize = kwargs.get("localize", False)
         self.seed = kwargs.get("seed", None)
-    
+
     def __str__(self) -> str:
         """Return abbreviated name of method."""
         return f"EnKF ({self.mixture_model})"
- 
-    def solve(self, prob:Problem):
+
+    def solve(self, prob: Problem):
         """Estimate the rare event of `prob`.
 
         Args:
@@ -869,7 +902,7 @@ class ENKF(Solver):
             Solution: Estimate of probability of failure and other results from computation.
         """
         try:
-            enkf = EnKF_rare_events(lambda x: maximum(prob.lsf(x),0),
+            enkf = EnKF_rare_events(lambda x: maximum(prob.lsf(x), 0),
                                     zeros((1, 1)),
                                     self.num_steps,
                                     prob.sample.shape[0],
@@ -877,14 +910,14 @@ class ENKF(Solver):
                                     self.cvar_tgt,
                                     0,
                                     False,
-                                    g_original=prob.lsf, 
-                                    k_init=self.num_comps, 
+                                    g_original=prob.lsf,
+                                    k_init=self.num_comps,
                                     mixture_model=self.mixture_model)
             enkf.uk = prob.sample
             enkf.uk_initial = enkf.uk.copy()
             enkf.uk_save.append(enkf.uk)
             enkf.mean_k[0, :] = mean(enkf.uk, axis=0)
-                
+
             seed(self.seed)
             enkf.perform_iteration()
             enkf.calculate_failure_probability()
@@ -899,21 +932,20 @@ class ENKF(Solver):
             )
         except Exception as e:
             warn(str(e))
-            Solution(zeros(0,0), 
-            array([nan]),
-            zeros((1, N))*nan,
-            array([nan]),
-            nan,
-            str(e))
-            
-        
-        
+            Solution(zeros(0, 0),
+                     array([nan]),
+                     zeros((1, N))*nan,
+                     array([nan]),
+                     nan,
+                     str(e))
+
+
 class SIS(Solver):
     """Wrapper for SIS code from Engineering Risk Analysis Group, TU Munich."""
 
     def __init__(self, **kwargs) -> None:
         """Handle all possible keywords specifying solver options.
-        
+
         Optional Keyword Arguments:
             num_chains_wrt_sample Use `num_chains_wrt_sample`*sample size number of chains for the MCMC routine.
             burn_in: burn-in period for MCMC routine.
@@ -935,13 +967,14 @@ class SIS(Solver):
         self.burn_in = kwargs.get("burn_in", 0)
         self.cvar_tgt = kwargs.get("cvar_tgt", 1.0)
         self.mixture_model = kwargs.get("mixture_model", "GM")
-        assert self.mixture_model in ["GM", "aCS"], "mixture_model must be either 'GM' or 'aCS'"
+        assert self.mixture_model in [
+            "GM", "aCS"], "mixture_model must be either 'GM' or 'aCS'"
         self.num_comps = kwargs.get("num_comps", 1)
         self.seed = kwargs.get("seed", None)
         self.fixed_initial_sample = kwargs.get("fixed_initial_sample", True)
         self.verbose = kwargs.get("verbose", False)
         self.return_other = kwargs.get("return_other", False)
-    
+
     def __str__(self) -> str:
         """Return abbreviated name of method."""
         return f"SiS ({self.mixture_model})"
@@ -969,7 +1002,7 @@ class SIS(Solver):
         # Solve
         try:
             if self.mixture_model == "aCS":
-                Pr, l_tot, samplesU, samplesX, COV_Sl= SIS_aCS(
+                Pr, l_tot, samplesU, samplesX, COV_Sl = SIS_aCS(
                     N,
                     p,
                     my_lsf,
@@ -977,12 +1010,12 @@ class SIS(Solver):
                     self.burn_in,
                     self.cvar_tgt,
                     seed=self.seed,
-                    initial_sample=initial_sample, 
-                    transform_lsf= not isinstance(prob, NormalProblem),
+                    initial_sample=initial_sample,
+                    transform_lsf=not isinstance(prob, NormalProblem),
                     verbose=self.verbose)
                 k_fin = nan
             else:
-                Pr, l_tot, samplesU, samplesX, k_fin, COV_Sl= SIS_GM(
+                Pr, l_tot, samplesU, samplesX, k_fin, COV_Sl = SIS_GM(
                     N,
                     p,
                     my_lsf,
@@ -991,17 +1024,17 @@ class SIS(Solver):
                     self.burn_in,
                     self.cvar_tgt,
                     seed=self.seed,
-                    initial_sample=initial_sample, 
-                    transform_lsf= not isinstance(prob, NormalProblem),
+                    initial_sample=initial_sample,
+                    transform_lsf=not isinstance(prob, NormalProblem),
                     verbose=self.verbose)
         except Exception as e:
             warn(str(e))
-            Solution(zeros(0,0), 
-            array([nan]),
-            zeros((1, N))*nan,
-            array([nan]),
-            my_lsf.num_evals,
-            str(e))
+            Solution(zeros(0, 0),
+                     array([nan]),
+                     zeros((1, N))*nan,
+                     array([nan]),
+                     my_lsf.num_evals,
+                     str(e))
 
         # Set up Solution object, no history available!
         if self.return_other:
@@ -1012,13 +1045,71 @@ class SIS(Solver):
         else:
             other = None
         return Solution(
-            samplesX[-1][None,...],
+            samplesX[-1][None, ...],
             array([nan]),
             zeros((1, N))*nan,
             array([Pr]),
             my_lsf.num_evals,
             "Success",
-            num_steps = l_tot,
+            num_steps=l_tot,
             other=other
         )
-        
+
+
+class CMC(Solver):
+    """Crude Monte Carlo simulation.
+    """
+
+    def __init__(self, num_runs: int,
+                 seed: int = None,
+                 verbose=True) -> None:
+
+        super().__init__()
+        self.num_runs = num_runs
+        self.seed = seed
+        self.verbose = verbose
+        self.name = "Crude Monte Carlo Simulation"
+
+    def __str__(self) -> str:
+        return self.name
+
+    def solve(self, prob: Problem) -> Solution:
+        batch_size = 2**10
+        rest = self.num_runs % batch_size
+        num_batches = self.num_runs // batch_size + (1 if rest != 0 else 0)
+        lsf_evals = nan * zeros(self.num_runs)
+        final_sample = nan * zeros((self.num_runs, prob.sample.shape[-1]))
+        msg = "Success"
+        cost = 0
+        pf = 0
+        for i in range(num_batches):
+            try:
+                if self.verbose:
+                    print(f"Batch {i} of {num_batches}.", end="")
+                # set seed for this batch
+                batch_seed = None
+                if self.seed is not None:
+                    batch_seed = self.seed + i * self.num_runs
+                # compute current batch size
+                current_batch_size = rest if (
+                    i == num_batches-1 and rest != 0) else batch_size
+                # evaluate this batch
+                prob.set_sample(current_batch_size, seed=batch_seed)
+                final_sample[cost:cost + current_batch_size, ...] = prob.sample
+                lsf_evals[cost:cost +
+                          current_batch_size] = prob.lsf(prob.sample)
+                cost += current_batch_size
+                pf = sum(lsf_evals[0:cost] <= 0) / cost
+                if self.verbose:
+                    print(f" Current estimate: {pf}")
+
+            except Exception as e:
+                warn(str(e))
+                print(traceback.format_exc())
+                msg = str(e)
+        return Solution(final_sample[None, ...],
+                        nan * zeros(1),
+                        lsf_evals[None, ...],
+                        ones(1)*pf,
+                        cost,
+                        msg)
