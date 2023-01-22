@@ -12,22 +12,24 @@ from scipy.stats import variation
 from rareeventestimation.solution import Solution
 from rareeventestimation.problem.problem import Problem
 from rareeventestimation.solver import CBREE, Solver, CBREECache
+from rareeventestimation.evaluation.constants import DOUBLE_PRECISION
 from numpy.random import default_rng
 import pandas as pd
 from os import path
 import gc
 from tempfile import NamedTemporaryFile
 
-def do_multiple_solves(prob:Problem,
-                       solver:Solver,
-                       num_runs:int,
-                       dir= ".",
+
+def do_multiple_solves(prob: Problem,
+                       solver: Solver,
+                       num_runs: int,
+                       dir=".",
                        prefix="",
                        verbose=True,
                        reset_dict=None,
                        save_other=False,
                        other_list=None,
-                       addtnl_cols= None) -> str:
+                       addtnl_cols=None) -> str:
     """Call solver multiple times and save results.
 
     Args:
@@ -41,43 +43,44 @@ def do_multiple_solves(prob:Problem,
         save_other (bool, optional): Whether to save the entries from `other` (attribute of solution object) in the csv file. Defaults to False.
         other_list (_type_, optional): Whether to save these entries from `other` (attribute of solution object) in the csv file.. Defaults to None.
         addtnl_cols (dict, optional): Add columns with key names and fill with values from this dict. Defaults to None.
-        
+
     Returns:
         str: Path to results.
     """
     with NamedTemporaryFile(prefix=prefix, suffix=".csv", delete=False, dir=dir) as f:
-        file_name = f.name    
+        file_name = f.name
     estimtates = zeros(num_runs)
     write_header = True
     for i in range(num_runs):
         # set up solver
 
-        solver = solver.set_options({"seed":i, "rng": default_rng(i)}, in_situ=False)
+        solver = solver.set_options(
+            {"seed": i, "rng": default_rng(i)}, in_situ=False)
         if reset_dict is not None:
             solver = solver.set_options(reset_dict, in_situ=False)
-            
+
         # solve
-        try: 
+        try:
             solution = solver.solve(prob)
         except Exception as e:
             # set up emtpy solution
-            solution = Solution(prob.sample[None,...],
+            solution = Solution(prob.sample[None, ...],
                                 nan * zeros(1),
                                 nan * zeros(prob.sample.shape[0]),
                                 zeros(1),
                                 0,
                                 str(e))
-            
+
         df = pd.DataFrame(index=[0])
         df["Solver"] = str(solver)
-        df["Problem"]=prob.name
-        df["Seed"]=i
+        df["Problem"] = prob.name
+        df["Seed"] = i
         df["Sample Size"] = prob.sample.shape[0]
-        df["Truth"]=prob.prob_fail_true
+        df["Truth"] = prob.prob_fail_true
         df["Estimate"] = solution.prob_fail_hist[-1]
-        df["Cost"]=solution.costs
-        df["Steps"]=solution.num_steps
-        df["Message"]=solution.msg
+        df["Cost"] = solution.costs
+        df["Steps"] = solution.num_steps
+        df["Message"] = solution.msg
         if solution.other is not None:
             if save_other and other_list is None:
                 for c in solution.other.keys():
@@ -89,41 +92,43 @@ def do_multiple_solves(prob:Problem,
                         df[c] = df[c].map(list)
                     except TypeError:
                         if not(isinstance(df[c].values[0], Real) or isinstance(df[c].values[0], str)):
-                            print(f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
+                            print(
+                                f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
         if addtnl_cols is not None:
-            for k,v in addtnl_cols.items():
-                df[k]=v
+            for k, v in addtnl_cols.items():
+                df[k] = v
         # save
         df.to_csv(file_name, mode="a", header=write_header, index=False)
-        write_header=False
-        
-        
+        write_header = False
+
         # talk
         if verbose:
-            estimtates[i]  = solution.prob_fail_hist[-1]
-            relRootMSE = sqrt(average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
-            print("Rel. Root MSE after " +  str(i+1) + "/" +str(num_runs) + " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
+            estimtates[i] = solution.prob_fail_hist[-1]
+            relRootMSE = sqrt(
+                average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
+            print("Rel. Root MSE after " + str(i+1) + "/" + str(num_runs) +
+                  " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
         del df
         del solution
         gc.collect()
-        
+
     return file_name
 
 
-def study_cbree_observation_window(prob:Problem,
-                                   solver:CBREE,
-                                   num_runs:int,
-                                   dir= ".",
+def study_cbree_observation_window(prob: Problem,
+                                   solver: CBREE,
+                                   num_runs: int,
+                                   dir=".",
                                    prefix="",
                                    verbose=True,
-                                   observation_window_range=range(2,15),
+                                   observation_window_range=range(2, 15),
                                    reset_dict=None,
                                    solve_from_caches_callbacks=None,
                                    save_other=False,
                                    other_list=None,
-                                   addtnl_cols= None) -> str:
+                                   addtnl_cols=None) -> str:
     """Call CBREE solver multiple times and save results.
-    
+
     Cache the result of each run and redo the computation with different values for
     `observation window`
 
@@ -142,49 +147,53 @@ def study_cbree_observation_window(prob:Problem,
         addtnl_cols (dict, optional): Add columns with key names and fill with values from this dict. Defaults to None.
     """
     with NamedTemporaryFile(prefix=prefix, suffix=".csv", delete=False, dir=dir) as f:
-        file_name = f.name   
-    write_header=True
+        file_name = f.name
+    write_header = True
     estimtates = zeros(num_runs)
-    original_callback = solver.callback # save this, callback changes before solving_from_caches
+    # save this, callback changes before solving_from_caches
+    original_callback = solver.callback
     for i in range(num_runs):
-        solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": False, "save_history": True, "return_caches":True, "callback":original_callback}, in_situ=False)
+        solver = solver.set_options({"seed": i, "rng": default_rng(i), "divergence_check": False,
+                                    "save_history": True, "return_caches": True, "callback": original_callback}, in_situ=False)
         if reset_dict is not None:
             solver = solver.set_options(reset_dict, in_situ=False)
-            
+
         # solve
         try:
             solution = solver.solve(prob)
             cache_list = solution.other["cache_list"]
             df = pd.DataFrame(index=[0])
             df["Solver"] = solver.name
-            df["Problem"]=prob.name
-            df["Seed"]=i
+            df["Problem"] = prob.name
+            df["Seed"] = i
             df["Sample Size"] = prob.sample.shape[0]
-            df["Truth"]=prob.prob_fail_true
+            df["Truth"] = prob.prob_fail_true
             df["Estimate"] = solution.prob_fail_hist[-1]
-            df["Cost"]=solution.costs
-            df["Steps"]=solution.num_steps
-            df["Message"]=solution.msg
+            df["Cost"] = solution.costs
+            df["Steps"] = solution.num_steps
+            df["Message"] = solution.msg
             if solution.other is not None:
                 if save_other and other_list is None:
                     for c in solution.other.keys():
                         df[c] = [solution.other[c].tolist()]
                 if other_list is not None:
                     for c in other_list:
-                        df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
+                        df[c] = [solution.other.get(
+                            c, asarray([pd.NA])).tolist()]
                         try:
                             df[c] = df[c].map(list)
                         except TypeError:
                             if not(isinstance(df[c].values[0], Real) or isinstance(df[c].values[0], str)):
-                                print(f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
+                                print(
+                                    f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
             if addtnl_cols is not None:
-                for k,v in addtnl_cols.items():
-                    df[k]=v
-            df["divergence_check"]=False
-            df["observation_window"]=0
-            df["callback"]= solver.callback is not None
+                for k, v in addtnl_cols.items():
+                    df[k] = v
+            df["divergence_check"] = False
+            df["observation_window"] = 0
+            df["callback"] = solver.callback is not None
             df.to_csv(file_name, mode="a", header=write_header)
-            write_header=False
+            write_header = False
             # Now solve with observation window and callbacks
             if solve_from_caches_callbacks is None:
                 solve_from_caches_callbacks = {False: None}
@@ -192,16 +201,18 @@ def study_cbree_observation_window(prob:Problem,
                 for callback_name, callback in solve_from_caches_callbacks.items():
                     # set up solver
 
-                    solver = solver.set_options({"seed":i, "rng": default_rng(i), "divergence_check": True, "observation_window":win_len}, in_situ=False)
+                    solver = solver.set_options({"seed": i, "rng": default_rng(
+                        i), "divergence_check": True, "observation_window": win_len}, in_situ=False)
                     if reset_dict is not None:
                         solver = solver.set_options(reset_dict, in_situ=False)
-                    solver.callback = callback    
+                    solver.callback = callback
                     # solve
-                    try: 
-                        solution = solver.solve_from_caches(deepcopy(cache_list))
+                    try:
+                        solution = solver.solve_from_caches(
+                            deepcopy(cache_list))
                     except Exception as e:
                         # set up emtpy solution
-                        solution = Solution(prob.sample[None,...],
+                        solution = Solution(prob.sample[None, ...],
                                             nan * zeros(1),
                                             nan * zeros(prob.sample.shape[0]),
                                             zeros(1),
@@ -209,49 +220,53 @@ def study_cbree_observation_window(prob:Problem,
                                             str(e))
                     df = pd.DataFrame(index=[0])
                     df["Solver"] = solver.name
-                    df["Problem"]=prob.name
-                    df["Seed"]=i
+                    df["Problem"] = prob.name
+                    df["Seed"] = i
                     df["Sample Size"] = prob.sample.shape[0]
-                    df["Truth"]=prob.prob_fail_true
+                    df["Truth"] = prob.prob_fail_true
                     df["Estimate"] = solution.prob_fail_hist[-1]
-                    df["Cost"]=solution.costs
-                    df["Steps"]=solution.num_steps
-                    df["Message"]=solution.msg
+                    df["Cost"] = solution.costs
+                    df["Steps"] = solution.num_steps
+                    df["Message"] = solution.msg
                     if solution.other is not None:
                         if save_other and other_list is None:
                             for c in solution.other.keys():
                                 df[c] = [solution.other[c].tolist()]
                         if other_list is not None:
                             for c in other_list:
-                                df[c] = [solution.other.get(c, asarray([pd.NA])).tolist()]
+                                df[c] = [solution.other.get(
+                                    c, asarray([pd.NA])).tolist()]
                                 try:
                                     df[c] = df[c].map(list)
                                 except TypeError:
                                     if not(isinstance(df[c].values[0], Real) or isinstance(df[c].values[0], str)):
-                                        print(f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
+                                        print(
+                                            f"{c} cannot be cast to a list and has type {type(df[c].values[0])}")
                     if addtnl_cols is not None:
-                        for k,v in addtnl_cols.items():
-                            df[k]=v
-                    df["divergence_check"]=True    
-                    df["observation_window"]=win_len
+                        for k, v in addtnl_cols.items():
+                            df[k] = v
+                    df["divergence_check"] = True
+                    df["observation_window"] = win_len
                     df["callback"] = callback_name
                     # save
                     df.to_csv(file_name, mode="a", header=False)
-                
+
             # talk
             if verbose:
-                estimtates[i]  = solution.prob_fail_hist[-1]
-                relRootMSE = sqrt(average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
-                print("Rel. Root MSE after " +  str(i+1) + "/" +str(num_runs) + " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
+                estimtates[i] = solution.prob_fail_hist[-1]
+                relRootMSE = sqrt(
+                    average((estimtates[0:i+1] - prob.prob_fail_true)**2)) / prob.prob_fail_true
+                print("Rel. Root MSE after " + str(i+1) + "/" + str(num_runs) +
+                      " runs: " + str(relRootMSE), end="\r" if i < num_runs - 1 else "\n")
         except Exception as e:
             print(e)
-         
-    return file_name
-   
 
-def load_data(pth:str, pattern:str ,recursive=True, kwargs={}) -> pd.DataFrame:
+    return file_name
+
+
+def load_data(pth: str, pattern: str, recursive=True, kwargs={}) -> pd.DataFrame:
     """Load files from `do_multiple_solves` and return them as a DataFrame.
-    
+
     Also works for files created by `study_cbree_observation_window`.
     Assume that solution files are of the csv format.
 
@@ -267,30 +282,33 @@ def load_data(pth:str, pattern:str ,recursive=True, kwargs={}) -> pd.DataFrame:
     # Hotfix for mixed up columns :(
     df_list = [pd.read_csv(f, **kwargs) for f in files]
     for i, df in enumerate(df_list):
-        if all([c in df.columns for c in ["divergence_check","observation_window"]]):
+        if all([c in df.columns for c in ["divergence_check", "observation_window"]]):
             if "True" in df["observation_window"].values:
-                df = df.rename(columns={"divergence_check":"1","observation_window":"2"})
-                df = df.rename(columns={"1":"observation_window", "2":"divergence_check"})
-                df_list[i] =df.replace(
-                    {"divergence_check":{"True":True, "0":False},
-                    "observation_window":{"False":0, "2":2, "5": 5, "10":10}})
-    df = pd.concat(df_list,ignore_index=True)
+                df = df.rename(
+                    columns={"divergence_check": "1", "observation_window": "2"})
+                df = df.rename(
+                    columns={"1": "observation_window", "2": "divergence_check"})
+                df_list[i] = df.replace(
+                    {"divergence_check": {"True": True, "0": False},
+                     "observation_window": {"False": 0, "2": 2, "5": 5, "10": 10}})
+    df = pd.concat(df_list, ignore_index=True)
     # hotfix for missnamed problems :(
     df = df.replace({"Problem": {"Fujita Rackwitz (d=2)": "Fujita Rackwitz Problem (d=2)",
-                                "Fujita Rackwitz (d=50)": "Fujita Rackwitz Problem (d=50)"}})
+                                 "Fujita Rackwitz (d=50)": "Fujita Rackwitz Problem (d=50)"}})
     df.drop_duplicates(inplace=True)
     df.reset_index(inplace=True)
     # Now find all columns containing arrays (as strings) and transform 'em
     c = CBREECache(zeros(0),  zeros(0),  zeros(0))
     cache_attributes = [a for a in dir(c) if a[0] != "_"]
-    my_eval = lambda cell: asarray(literal_eval(cell.replace("nan", "None")))
+    def my_eval(cell): return asarray(
+        literal_eval(cell.replace("nan", "None")))
     for c in df.columns:
-        if c in cache_attributes and isinstance(df[c][0], str) and df[c][0][0]=="[" :
+        if c in cache_attributes and isinstance(df[c][0], str) and df[c][0][0] == "[":
             df[c] = df[c].apply(my_eval)
     return df
 
 
-def add_evaluations(df:pd.DataFrame, only_success=False, remove_outliers=False) -> pd.DataFrame:
+def add_evaluations(df: pd.DataFrame, only_success=False, remove_outliers=False) -> pd.DataFrame:
     """Add quantities of interest to df.
 
     Args:
@@ -308,56 +326,68 @@ def add_evaluations(df:pd.DataFrame, only_success=False, remove_outliers=False) 
     msk = df["Message"] == "Success"
     idx_success = df.index[msk]
     # Add MSE et al.
-    df.reindex(columns = ["MSE", 
-                          "CVAR Estimate"
-                          "Relative MSE", 
-                          "Root MSE", 
-                          ".25 Relative Error",
-                          ".50 Relative Error",
-                          ".75 Relative Error",
-                          "Relative Root MSE", 
-                          "Relative Root MSE Variance", 
-                          "Estimate Mean", 
-                          "Estimate Bias", 
-                          "Estimate Variance",
-                          "Cost Mean",
-                          "Cost Varaince",
-                          ".25 Cost",
-                          ".50 Cost",
-                          ".75 Cost",
-                          "Success Rate"])
-    for key,idx in idxs.items():
+    df.reindex(columns=["MSE",
+                        "CVAR Estimate"
+                        "Relative MSE",
+                        "Root MSE",
+                        ".25 Relative Error",
+                        ".50 Relative Error",
+                        ".75 Relative Error",
+                        "Relative Root MSE",
+                        "Relative Root MSE Variance",
+                        "Estimate Mean",
+                        "Estimate Bias",
+                        "Estimate Variance",
+                        "Cost Mean",
+                        "Cost Varaince",
+                        ".25 Cost",
+                        ".50 Cost",
+                        ".75 Cost",
+                        "Success Rate"])
+    for key, idx in idxs.items():
         if only_success:
             idx2 = [i for i in idx if i in idx_success]
         else:
             idx2 = idx
         if remove_outliers:
-            p75,p25 = df.loc[idx2, "Estimate"].quantile(q=[0.75, 0.25])
-            idx2 = [i for i in idx2 if df.loc[i, "Estimate"] <=p75 + 3*(p75-p25) ]
+            p75, p25 = df.loc[idx2, "Estimate"].quantile(q=[0.75, 0.25])
+            idx2 = [i for i in idx2 if df.loc[i,
+                                              "Estimate"] <= p75 + 3*(p75-p25)]
         df.loc[idx, "Estimate Mean"] = average(df.loc[idx2, "Estimate"])
         df.loc[idx, "Estimate Variance"] = var(df.loc[idx2, "Estimate"])
-        df.loc[idx, "Estimate Bias"] = df.loc[idx2, "Estimate Mean"] - df.loc[idx2, "Truth"] 
+        df.loc[idx, "Estimate Bias"] = df.loc[idx2,
+                                              "Estimate Mean"] - df.loc[idx2, "Truth"]
         df.loc[idx, "MSE"] = average(df.loc[idx2, "Difference"]**2)
-        df.loc[idx, ".25 Relative Error"] = (abs(df.loc[idx2, "Difference"]) / df.loc[idx2, "Truth"]).quantile(q=0.25)
-        df.loc[idx, ".75 Relative Error"] = (abs(df.loc[idx2, "Difference"]) / df.loc[idx2, "Truth"]).quantile(q=0.75)
-        df.loc[idx, ".50 Relative Error"] = (abs(df.loc[idx2, "Difference"]) / df.loc[idx2, "Truth"]).quantile(q=0.5)
+        if average(df.loc[idx2, "Difference"]**2) == 0.0:
+            print("stop")
+
+        df.loc[idx, ".25 Relative Error"] = (
+            abs(df.loc[idx2, "Difference"]) / df.loc[idx2, "Truth"]).quantile(q=0.25)
+        df.loc[idx, ".75 Relative Error"] = (
+            abs(df.loc[idx2, "Difference"]) / df.loc[idx2, "Truth"]).quantile(q=0.75)
+        df.loc[idx, ".50 Relative Error"] = (
+            abs(df.loc[idx2, "Difference"]) / df.loc[idx2, "Truth"]).quantile(q=0.5)
         #df.loc[idx, "MSE Average"] = average((df.loc[idx2, "Truth"] - df.loc[idx2, "Average Estimate"])**2)
-        df.loc[idx, "Relative MSE"] = df.loc[idx, "MSE"] / df.loc[idx, "Truth"]**2
+        df.loc[idx, "Relative MSE"] = df.loc[idx,
+                                             "MSE"] / df.loc[idx, "Truth"]**2
         df.loc[idx, "Root MSE"] = sqrt(df.loc[idx, "MSE"])
-        df.loc[idx, "Relative Root MSE"] = df.loc[idx, "Root MSE"] / df.loc[idx, "Truth"]  
-        df.loc[idx, "Relative Root MSE Variance"] = var(abs(df.loc[idx2, "Relative Error"]))
+        df.loc[idx, "Relative Root MSE"] = df.loc[idx,
+                                                  "Root MSE"] / df.loc[idx, "Truth"]
+        df.loc[idx, "Relative Root MSE Variance"] = var(
+            abs(df.loc[idx2, "Relative Error"]))
         df.loc[idx, "Cost Mean"] = average(df.loc[idx2, "Cost"])
         df.loc[idx, ".25 Cost"] = df.loc[idx2, "Cost"].quantile(q=0.25)
         df.loc[idx, ".75 Cost"] = df.loc[idx2, "Cost"].quantile(q=0.75)
         df.loc[idx, ".50 Cost"] = df.loc[idx2, "Cost"].quantile(q=0.5)
-        df.loc[idx, "Cost Variance"] = var(df.loc[idx2, "Cost"])  
-        df.loc[idx, "Success Rate"] = average(df.loc[idx, "Message"]=="Success")
+        df.loc[idx, "Cost Variance"] = var(df.loc[idx2, "Cost"])
+        df.loc[idx, "Success Rate"] = average(
+            df.loc[idx, "Message"] == "Success")
         df.loc[idx, "CVAR Estimate"] = variation(df.loc[idx2, "Estimate"])
         #df.loc[idx, "Success Average"] = average(df.loc[idx2, "MSE"] >= df.loc[idx2, "MSE Average"])
     return df
 
 
-def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
+def aggregate_df(df: pd.DataFrame, cols=None) -> pd.DataFrame:
     """Custom aggregation of df coming from add_evaluations.
 
     Args:
@@ -367,12 +397,14 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
         pd.DataFrame: Dataframe with multiindex.
     """
     if cols is None:
-        cols = ["Problem","Solver","Sample Size"]
+        cols = ["Problem", "Solver", "Sample Size"]
     else:
-        cols.extend(["Problem","Solver","Sample Size"])
+        cols.extend(["Problem", "Solver", "Sample Size"])
+
     def my_mean(grp):
-        vals=[]
-        cc = [c for c in grp.columns if c not in ["Problem", "Solver", "Sample Size"]]
+        vals = []
+        cc = [c for c in grp.columns if c not in [
+            "Problem", "Solver", "Sample Size"]]
         for c in cc:
             if len(grp[c]) == 0:
                 vals.append(None)
@@ -383,7 +415,7 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
                 elif isinstance(grp[c].values[0], Real):
                     vals.append(grp[c].mean())
                 else:
-                     vals.append(grp[c].unique()[0])
+                    vals.append(grp[c].unique()[0])
         # for c in cols:
         #     if grp[c].dtype.str == '|O':
         #         vals.append(grp[c].unique()[0])
@@ -394,12 +426,14 @@ def aggregate_df(df:pd.DataFrame, cols=None) -> pd.DataFrame:
     df_agg.reset_index(inplace=True)
     return df_agg
 
-def get_benchmark_df(data_dirs = {"enkf":"docs/benchmarking/data/enkf_sim",
-                                  "sis":"docs/benchmarking/data/sis_sim"},
-                     df_dir = "docs/benchmarking/data",
-                     df_names ={"df": "benchmark_toy_problems_processed.json",
-                                "df_agg": "benchmark_toy_problems_aggregated.json"},
-                     force_reload=False)-> tuple:
+
+def get_benchmark_df(data_dirs={"enkf": "docs/benchmarking/data/enkf_sim",
+                                "sis": "docs/benchmarking/data/sis_sim"},
+                     df_dir="docs/benchmarking/data",
+                     df_names={"df": "benchmark_toy_problems_processed.json",
+                               "df_agg": "benchmark_toy_problems_aggregated.json"},
+                     force_reload=False,
+                     remove_outliers=False) -> tuple:
     """Custom function to load benchmark simultions.
 
     Args:
@@ -409,8 +443,8 @@ def get_benchmark_df(data_dirs = {"enkf":"docs/benchmarking/data/enkf_sim",
 
     Returns:
         tuple: (dataset, aggregated dataset)
-    """    
-    path_df= path.join(df_dir, df_names["df"])
+    """
+    path_df = path.join(df_dir, df_names["df"])
     path_df_agg = path.join(df_dir, df_names["df_agg"])
     if not (path.exists(path_df) and path.exists(path_df_agg)) or force_reload:
         # load dfs
@@ -418,33 +452,39 @@ def get_benchmark_df(data_dirs = {"enkf":"docs/benchmarking/data/enkf_sim",
         df_agg = None
         for method, data_dir in data_dirs.items():
             this_df = load_data(data_dir, "*")
-            this_df.drop(columns=["index", "Unnamed: 0"], inplace=True, errors="ignore")
+            this_df.drop(columns=["index", "Unnamed: 0"],
+                         inplace=True, errors="ignore")
             this_df.drop_duplicates(inplace=True)
             # cast solver names, add cvat_tgt to name for
             # correct grouping in add_evaluation and aggregate_df
-            this_df = this_df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
-            this_df["Solver"] = this_df.apply(lambda x : ", ".join([x.Solver, str(x.cvar_tgt)]), axis=1)
-            this_df = add_evaluations(this_df)
+            this_df = this_df.apply(
+                force_bm_names, axis=1, name="Solver", specification="mixture_model")
+            this_df["Solver"] = this_df.apply(
+                lambda x: ", ".join([x.Solver, str(x.cvar_tgt)]), axis=1)
+            this_df = add_evaluations(this_df, remove_outliers=remove_outliers)
             this_df_agg = aggregate_df(this_df)
             if df is None:
                 df = this_df
             else:
-                df = pd.concat([df, this_df],ignore_index=True)
+                df = pd.concat([df, this_df], ignore_index=True)
             if df_agg is None:
                 df_agg = this_df_agg
             else:
-                df_agg = pd.concat([df_agg, this_df_agg],ignore_index=True)
+                df_agg = pd.concat([df_agg, this_df_agg], ignore_index=True)
         # recast solver nmaes for plotting
-        df = df.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
-        df.to_json(path_df)
-        df_agg = df_agg.apply(force_bm_names, axis=1, name="Solver", specification = "mixture_model")
-        df_agg.to_json(path_df_agg)
+        df = df.apply(force_bm_names, axis=1, name="Solver",
+                      specification="mixture_model")
+        df.to_json(path_df, double_precision=DOUBLE_PRECISION)
+        df_agg = df_agg.apply(force_bm_names, axis=1,
+                              name="Solver", specification="mixture_model")
+        df_agg.to_json(path_df_agg, double_precision=DOUBLE_PRECISION)
     else:
         df = pd.read_json(path_df)
         df_agg = pd.read_json(path_df_agg)
     return df, df_agg
 
-def force_bm_names(row:pd.Series, name= "Solver", specification="mixture_model") -> pd.Series:
+
+def force_bm_names(row: pd.Series, name="Solver", specification="mixture_model") -> pd.Series:
     """Rename bechmark solvers from entries `name` and `specification` in `row`.
 
     Args:
@@ -471,8 +511,9 @@ def force_bm_names(row:pd.Series, name= "Solver", specification="mixture_model")
             new_name += spec
     row[name] = new_name
     return row
-        
-def expand_cbree_name(input:pd.Series, columns=[], pattern="}") -> pd.Series:
+
+
+def expand_cbree_name(input: pd.Series, columns=[], pattern="}") -> pd.Series:
     """Custom function adds parameter values to field `Solver`.
 
     Args:
@@ -484,10 +525,12 @@ def expand_cbree_name(input:pd.Series, columns=[], pattern="}") -> pd.Series:
         pd.Sereis: input with updated field `Solver`
     """
     for col in columns:
-        input.Solver = input.Solver.replace(pattern, f", '{col}': '{input[col]}'}}")
+        input.Solver = input.Solver.replace(
+            pattern, f", '{col}': '{input[col]}'}}")
     return input
 
-def my_number_formatter(x:Real) -> str:
+
+def my_number_formatter(x: Real) -> str:
     """Custom version of `str(x)`.
     Integers get integer notation, floats are cut after 2 digits
     Args:
@@ -496,12 +539,13 @@ def my_number_formatter(x:Real) -> str:
     Returns:
         str: Formatted number
     """
-    if int(x)==x:
+    if int(x) == x:
         return str(int(x))
     else:
         return f"{x:.2f}"
 
-def vec_to_latex_set(vec:ndarray) -> str:
+
+def vec_to_latex_set(vec: ndarray) -> str:
     """Make a nice latex set representation of the values in vec.
 
     Args:
@@ -517,11 +561,10 @@ def vec_to_latex_set(vec:ndarray) -> str:
     if len(vec) == 2:
         return f"\\{{{my_number_formatter(vec[0])}, {my_number_formatter(vec[-1])}\\}}"
     if len(vec) > 2:
-       return f"\\{{{my_number_formatter(vec[0])}, {my_number_formatter(vec[1])}, \\ldots, {my_number_formatter(vec[-1])}\\}}"
+        return f"\\{{{my_number_formatter(vec[0])}, {my_number_formatter(vec[1])}, \\ldots, {my_number_formatter(vec[-1])}\\}}"
 
 
-    
-def list_to_latex(ls:list) -> str:
+def list_to_latex(ls: list) -> str:
     """Exhaustive version of `vec_to_l  ex_set` with no sorting or ellipsis.
 
     Args:
@@ -540,10 +583,10 @@ def list_to_latex(ls:list) -> str:
     if all(array([isinstance(v, Real) for v in ls])):
         return f"$\\{{ {', '.join(map(my_number_formatter, ls))} \\}}$"
     else:
-         return f"{', '.join(ls)}"
-     
+        return f"{', '.join(ls)}"
 
-def squeeze_problem_names(prob_name:str) -> str:
+
+def squeeze_problem_names(prob_name: str) -> str:
     """Abbreviate the problem names.
 
     Args:

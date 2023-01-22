@@ -1,10 +1,11 @@
-from numpy import arange, cumsum, log, ndarray, sqrt, zeros, array, minimum, maximum, sum, amin, amax
+from numpy import arange, cumsum, log, ndarray, sqrt, zeros, array, minimum, maximum, sum, amin, amax, inf, log10
+from operator import add
 import pandas as pd
 from rareeventestimation.evaluation.convergence_analysis import aggregate_df
-from rareeventestimation.evaluation.constants import CMAP
+from rareeventestimation.evaluation.constants import CMAP, MY_LAYOUT
 import plotly.express as px
 import re
-from plotly.graph_objects import Figure, Scatter,Bar, Contour, Layout
+from plotly.graph_objects import Figure, Scatter,Bar, Contour, Layout, Box
 from os import path
 from rareeventestimation.problem.problem import Problem
 from rareeventestimation.solution import Solution
@@ -267,12 +268,14 @@ def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     f.update_layout(hovermode="x unified")
     return f
 
-def add_scatter_to_subplots(fig, num_rows, num_cols, **scatter_kwargs):
+def add_scatter_to_subplots(fig, rows, cols, **scatter_kwargs):
     first=True
     if "showlegend" in scatter_kwargs:
         del scatter_kwargs["showlegend"]
-    for i in range(num_rows):
-        for j in range(num_cols):
+    row_iter = range(rows) if isinstance(rows, int) else rows
+    col_iter = range(cols) if isinstance(cols, int) else cols
+    for i in row_iter:
+        for j in col_iter:
             fig.append_trace(Scatter(**scatter_kwargs, showlegend=first), row = i+1, col = j+1)
             first=False
     return fig
@@ -351,3 +354,163 @@ def plot_iteration(iter: int, prob: Problem, sol:Solution=None, delta=1) -> Figu
         #fig = go.Figure(data=[c_lsf, s], layout=l)
         return fig
     
+
+def update_yaxes_fromat(fig: Figure, fmt:str) -> Figure:
+    """Helper function for buggy `fig.update_layout`.
+    
+    Currently `fig.update_layout("yaxis_exponentformat": fmt)` is not applied
+    to all subplots. This functions does it.
+
+    Args:
+        fig (Figure):  Plotly figure.
+        fmt (str): Valid exponentformat.
+        One of ( "none" | "e" | "E" | "power" | "SI" | "B" ). 
+
+    Returns:
+        fig: Plotly figure with correct yaxis label format.
+    """
+    return fig.update_yaxes(exponentformat = fmt)
+
+    
+
+def make_efficiency_plot(df_line,
+                         df_box,
+                         x,
+                         y_line,
+                         y_box,
+                         facet_row=None,
+                         facet_col=None,
+                         shared_secondary_y_axes=False,
+                         y_log=False,
+                         secondary_y_padding=[0,0],
+                         facet_col_prefix=None,
+                         facet_row_prefix=None,
+                         facet_name_sep=": ",
+                         labels={}):
+    """_summary_
+
+    Must not containe columns with names "fc" or "fr"
+
+    Args:
+        df_line (_type_): _description_
+        df_box (_type_): _description_
+        x (_type_): _description_
+        y_line (_type_): _description_
+        y_box (_type_): _description_
+        facet_row (_type_, optional): _description_. Defaults to None.
+        facet_col (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
+    # set up figure, maybew adapt data with help columns
+    if facet_row is None:
+        df_line["fr"] = ""
+        df_box["fr"] = ""
+        facet_row = "fr"
+    if facet_col is None:
+        df_line["fc"] = ""
+        df_box["fc"] = ""
+        facet_col = "fc"
+    rows = df_line[facet_row].unique()
+    cols = df_line[facet_col].unique()
+    specs = len(rows)*[len(cols)*[{"secondary_y": True}]]
+    # Set titles
+    subplot_titles = []
+    for row_name in rows:
+        for col_name in cols:
+           if len(rows) > 1:
+               r_title = (facet_row_prefix + facet_name_sep) if facet_row_prefix is not None else ""
+               r_title += str(row_name)
+           else:
+              r_title=""
+           if len(cols) > 1:
+               c_title = (facet_col_prefix + facet_name_sep) if facet_col_prefix is not None else ""
+               c_title += str(col_name)
+               title = r_title + ", " + c_title
+           else:
+               title=r_title
+           subplot_titles.append(title)
+    fig = make_subplots(rows=len(rows),
+                        cols=1,
+                        specs=specs,
+                        subplot_titles=subplot_titles,
+                        x_title = x,
+                        shared_xaxes="all",
+                        shared_yaxes="all")
+    # collect limits here, to unify range of secondary y-axis
+    secondary_y_limits = [inf, -inf]
+    # populate subplots
+    counter = 0
+    for row_idx, row_name in enumerate(rows):
+        for col_idx, col_name in enumerate(cols):
+            # plot boxes
+            this_df_box = df_box[(df_box[facet_row] == row_name) &
+                                 (df_box[facet_col] == col_name)]
+            this_df_box.sort_values(x, inplace=True)
+            xx_box = this_df_box[x].values
+            yy_box = this_df_box[y_box].values
+            box = Box(
+                x=xx_box,
+                y=yy_box,
+                marker_color=CMAP[1],
+                name="Estimates",
+                legendgroup="2",
+                showlegend=counter == 0
+            )
+            fig.add_trace(box,
+                          row=row_idx+1, col=col_idx+1, secondary_y=True)
+
+            # plot lines
+            this_df_line = df_line[(df_line[facet_row] == row_name) &
+                                   (df_line[facet_col] == col_name)]
+            xx_line = this_df_line[x].values
+            yy_line = this_df_line[y_line].values
+            line = Scatter(
+                x=xx_line,
+                y=yy_line,
+                marker_color=CMAP[0],
+                name="Rel. Efficency",
+                legendgroup="1",
+                showlegend=counter == 0
+            )
+            fig.add_trace(line,
+                          row=row_idx+1, col=col_idx+1)
+            counter += 1
+            for idx, fun in zip((0, 1), (amin, amax)):
+                secondary_y_limits[idx] = fun([
+                    secondary_y_limits[idx], fun(yy_box)])
+    # clean up dfs
+    for df in [df_line, df_box]:
+        df.drop(columns=["fc", "fr"], inplace=True, errors="ignore")
+    # style figure
+    fig.update_layout(**MY_LAYOUT)
+    fig.update_layout(legend = dict(orientation = "h" ))
+    if  "yaxis_exponentformat" in MY_LAYOUT.keys():
+        fig =update_yaxes_fromat(fig, MY_LAYOUT["yaxis_exponentformat"])
+    secondary_y_limits = [int(log10(lim)) for lim in secondary_y_limits]
+    secondary_y_limits = list(map(add, secondary_y_limits, secondary_y_padding))
+    for row_idx in range(len(rows)):
+        for col_idx in range(len(cols)):
+            if shared_secondary_y_axes:
+                fig.update_yaxes(range=secondary_y_limits,
+                                row=row_idx+1,
+                                col=col_idx+1,
+                                secondary_y=True)
+            fig.update_yaxes(
+                             title="Estimates",
+                             type="log",
+                             minor_dtick="D2",
+                             row=row_idx+1,
+                             col=col_idx+1,
+                             showgrid=False,
+                             secondary_y=True)
+            fig.update_yaxes(
+                type="log" if y_log else None,
+                title="Rel. Efficiency",
+                row=row_idx+1,
+                col=col_idx+1,
+                secondary_y=False)
+    fig.for_each_annotation(
+        lambda a: a.update(text = labels.get(a.text) if labels.get(a.text) is not None else a.text))
+    return fig

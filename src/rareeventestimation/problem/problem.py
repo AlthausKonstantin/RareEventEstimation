@@ -8,9 +8,10 @@ from rareeventestimation.era.ERANataf import ERANataf
 from rareeventestimation.era.ERADist import ERADist
 from rareeventestimation.utilities import gaussian_logpdf
 
+
 class Problem:
     """"The Problem class formulates a rare event estimation problem."""
-    
+
     def __init__(self, lsf: Callable, e_fun: Callable, sample: ndarray, sample_gen=None, prob_fail_true=None, mpp=None, eranataf_dist=None, hints=None, name=None):
         """Make an instance of the Problem class.
 
@@ -42,8 +43,7 @@ class Problem:
         else:
             self.name = name
 
-
-    def set_sample(self, arg,seed=None):
+    def set_sample(self, arg, seed=None):
         """Reset self.sample.
 
         Args:
@@ -55,7 +55,7 @@ class Problem:
             assert hasattr(
                 self, "sample_gen"), "Problem has no sample generator. Provide a sample as a ndarray!"
             self.sample = self.sample_gen(arg, seed=seed)
-        elif isinstance(arg, ndarray) and arg.shape[-1] == self.sample[-1]:
+        elif isinstance(arg, ndarray) and (arg.shape[-1] == self.sample.shape[-1]):
             self.sample = arg
         else:
             print("arg is no integer or sample of correct dimension.")
@@ -68,7 +68,7 @@ class NormalProblem(Problem):
     Thus the energy function and the sample distrubtion are known (standard normal).
     """
 
-    def __init__(self, lsf: Callable, dim: int, sample_size: int, prob_fail_true=None, mpp=None, hints=None,name=None):
+    def __init__(self, lsf: Callable, dim: int, sample_size: int, prob_fail_true=None, mpp=None, hints=None, name=None):
         """Construcor if distribution is standard normal.
 
         Args:
@@ -84,11 +84,12 @@ class NormalProblem(Problem):
 
         def e_fun(x): return -gaussian_logpdf(x)
 
-        def sample_gen(sample_size,seed=None): return eranataf_dist.random(n=sample_size,seed=seed)
+        def sample_gen(sample_size, seed=None): return eranataf_dist.random(
+            n=sample_size, seed=seed)
         sample = sample_gen(sample_size)
 
         super().__init__(lsf, e_fun, sample, sample_gen=sample_gen,
-                         prob_fail_true=prob_fail_true, mpp=mpp, eranataf_dist=eranataf_dist, hints=hints,name=name)
+                         prob_fail_true=prob_fail_true, mpp=mpp, eranataf_dist=eranataf_dist, hints=hints, name=name)
 
 
 class Vectorizer:
@@ -149,4 +150,3 @@ class Vectorizer:
             # Meshgrid evaluation
             self.num_evals = self.num_evals + prod(args[0].shape)
             self.lsf_msh(args)
-

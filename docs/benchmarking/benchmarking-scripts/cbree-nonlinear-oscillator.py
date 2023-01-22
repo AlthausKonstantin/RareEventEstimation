@@ -7,6 +7,9 @@ parser.add_argument(
     "--dir", type=str, default="./docs/benchmarking/data/cbree_sim/nonlinear_oscillator")
 parser.add_argument("--start",
                     type=int,
+                    default=0)
+parser.add_argument("--stop",
+                    type=int,
                     default=13)
 args = parser.parse_args()
 
@@ -56,7 +59,7 @@ def main():
     for problem in problem_list:
         for i, solver in enumerate(solver_list):
             for s in sample_sizes:
-                if counter >= args.start:
+                if counter >= args.start and counter <= args.stop:
                     print(
                         f"({counter}/{total}) {problem.name}, {s} Samples, with {solver.name}")
                     problem.set_sample(s, seed=s)

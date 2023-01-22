@@ -14,7 +14,7 @@ from numpy import (amax, arange, arctan, array, average, concatenate, cov, diff,
                    ndarray, pi, prod, sqrt, tanh, tril, where, sum, zeros, ones, mean, asarray)
 from numpy.linalg import norm, inv
 from numpy.random import default_rng, seed
-from prettytable import PrettyTable
+
 from scipy.optimize import minimize_scalar, root
 from scipy.special import erfc
 from scipy.stats import multivariate_normal, variation
@@ -31,6 +31,7 @@ from rareeventestimation.era.ERANataf import ERANataf
 from rareeventestimation.problem.problem import Vectorizer
 from rareeventestimation.sis.SIS_aCS import SIS_aCS
 from rareeventestimation.sis.SIS_GM import SIS_GM
+from rareeventestimation.mls2mc.SIS_ENKF import sis 
 import os
 
 
@@ -954,6 +955,7 @@ class SIS(Solver):
                 Can be one of:
                     * "GM"
                     * "aCS"
+                    * "vMFNM"
             num_comps: Number of components for multimodal problems. Defaults to 1.
             seed (int, optional): Seed for the random number generator. Defaults to None.
             fixed_initial_sample (bool): Whether to us the initial sample provided by `prob` ins `solve`.
@@ -968,7 +970,7 @@ class SIS(Solver):
         self.cvar_tgt = kwargs.get("cvar_tgt", 1.0)
         self.mixture_model = kwargs.get("mixture_model", "GM")
         assert self.mixture_model in [
-            "GM", "aCS"], "mixture_model must be either 'GM' or 'aCS'"
+            "GM", "aCS", "vMFNM"], "mixture_model must be either 'GM' or 'aCS'"
         self.num_comps = kwargs.get("num_comps", 1)
         self.seed = kwargs.get("seed", None)
         self.fixed_initial_sample = kwargs.get("fixed_initial_sample", True)
@@ -1014,6 +1016,18 @@ class SIS(Solver):
                     transform_lsf=not isinstance(prob, NormalProblem),
                     verbose=self.verbose)
                 k_fin = nan
+            elif self.mixture_model == "vMFNM":
+                Pr, l_tot, _, _, _, _, samplesX, _ =  sis(
+                        N,
+                        p,
+                        my_lsf,
+                        self.burn_in,
+                        self.cvar_tgt,
+                        d,
+                        k_init=1,
+                        initial_sample=initial_sample,
+                        verbose=self.verbose,
+                        seed=self.seed)
             else:
                 Pr, l_tot, samplesU, samplesX, k_fin, COV_Sl = SIS_GM(
                     N,
@@ -1082,6 +1096,7 @@ class CMC(Solver):
         msg = "Success"
         cost = 0
         pf = 0
+        cvar = 0
         for i in range(num_batches):
             try:
                 if self.verbose:
@@ -1100,16 +1115,20 @@ class CMC(Solver):
                           current_batch_size] = prob.lsf(prob.sample)
                 cost += current_batch_size
                 pf = sum(lsf_evals[0:cost] <= 0) / cost
+                cvar = variation(lsf_evals[0:cost] <= 0, nan_policy="omit")
                 if self.verbose:
-                    print(f" Current estimate: {pf}")
+                    print(f" Current estimate: {pf}, cvar: {cvar}")
 
             except Exception as e:
                 warn(str(e))
                 print(traceback.format_exc())
                 msg = str(e)
+        prob.sample = final_sample
+
         return Solution(final_sample[None, ...],
                         nan * zeros(1),
                         lsf_evals[None, ...],
                         ones(1)*pf,
                         cost,
-                        msg)
+                        msg,
+                        other={"cvar": cvar})
