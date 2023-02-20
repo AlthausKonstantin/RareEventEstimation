@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dir", type=str, default="docs/benchmarking/data/enkf_sim_diffusion")
+parser.add_argument("--dir", type=str, default="./docs/benchmarking/data/enkf_sim_diffusion")
 
 args = parser.parse_args()
 

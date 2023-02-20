@@ -4,7 +4,7 @@ import rareeventestimation as ree
 
 
 def test_cmc():
-    num_runs = 10
+    num_runs = 100000
     solver = ree.CMC(num_runs, seed=1, verbose=True)
     sol = solver.solve(ree.prob_convex)
     print(sol.get_rel_err(ree.prob_convex))
@@ -13,6 +13,5 @@ def test_cmc():
 
 
 # %%
-test_cmc()
 
 # %%

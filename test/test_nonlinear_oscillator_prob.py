@@ -13,6 +13,5 @@ def test_nonlinear_oscillator():
 
 
 # %%
-sol = test_nonlinear_oscillator()
 
 # %%

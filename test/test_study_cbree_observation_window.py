@@ -21,5 +21,3 @@ def test_study_cbree_observation_window():
     
     tmp_dir.cleanup()
 
-
-test_study_cbree_observation_window()

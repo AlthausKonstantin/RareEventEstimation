@@ -1,5 +1,4 @@
 # read version from installed package
-import imp
 from importlib.metadata import version
 __version__ = version("rareeventestimation")
 from rareeventestimation.solver import CBREE, ENKF, SIS, CBREECache, CMC

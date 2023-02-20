@@ -432,6 +432,7 @@ def get_benchmark_df(data_dirs={"enkf": "docs/benchmarking/data/enkf_sim",
                      df_dir="docs/benchmarking/data",
                      df_names={"df": "benchmark_toy_problems_processed.json",
                                "df_agg": "benchmark_toy_problems_aggregated.json"},
+                     file_regex = "*",
                      force_reload=False,
                      remove_outliers=False) -> tuple:
     """Custom function to load benchmark simultions.
@@ -451,7 +452,7 @@ def get_benchmark_df(data_dirs={"enkf": "docs/benchmarking/data/enkf_sim",
         df = None
         df_agg = None
         for method, data_dir in data_dirs.items():
-            this_df = load_data(data_dir, "*")
+            this_df = load_data(data_dir, file_regex)
             this_df.drop(columns=["index", "Unnamed: 0"],
                          inplace=True, errors="ignore")
             this_df.drop_duplicates(inplace=True)

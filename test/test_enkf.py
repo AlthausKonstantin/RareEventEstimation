@@ -12,4 +12,3 @@ def test_enkf():
             enkf = ree.ENKF(seed=1, is_distribution=m)
             sol = enkf.solve(p)
             assert sol.get_rel_err(p)[-1] < 0.2, f"Error too large for {p.name}"
-test_enkf()

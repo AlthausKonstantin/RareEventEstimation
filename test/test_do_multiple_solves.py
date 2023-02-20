@@ -19,5 +19,3 @@ def test_do_multiple_solves():
     
     tmp_dir.cleanup()
 
-
-test_do_multiple_solves()

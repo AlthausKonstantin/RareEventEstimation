@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dir", type=str, default="docs/benchmarking/data/cbree_sim/toy_problems_resampled")
+parser.add_argument("--dir", type=str, default="./docs/benchmarking/data/cbree_sim/toy_problems_resampled")
 parser.add_argument("--counter",
                     type=int,
                     default=0)

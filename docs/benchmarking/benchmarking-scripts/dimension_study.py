@@ -56,7 +56,7 @@ def main():
                     prob,
                     solver,
                     num_runs=num_runs,
-                    dir = "docs/benchmarking/data/cbree_sim/dimension_study",
+                    dir = "./docs/benchmarking/data/cbree_sim/dimension_study",
                     prefix=sub(r"\W+", "_",f"{prob.name} {solver.name}".lower()),
                     other_list=["Average Estimate",
                                 "Root Weighted Average Estimate",

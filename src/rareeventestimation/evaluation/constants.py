@@ -2,6 +2,7 @@ import plotly.io as pio
 import plotly.express as px
 CMAP = px.colors.qualitative.D3
 # Visualization and Output
+WIDTH = 700 # latex command \the\textwidth
 MY_TEMPLATE = pio.templates["plotly_white"]
 MY_TEMPLATE.update({"layout.colorway": CMAP})
 MY_LAYOUT = {
@@ -10,8 +11,8 @@ MY_LAYOUT = {
     "xaxis_exponentformat": "power",
     "yaxis_exponentformat": "power",
     "autosize": False,
-    "width": 700,
-    "height": 700*2/3,
+    "width": WIDTH,
+    "height": WIDTH*2/3,
     "margin": dict(
         l=50,
         r=50,
@@ -51,6 +52,10 @@ BM_SOLVER_SCATTER_STYLE = {
         "marker_symbol": "diamond",
         "marker_color": CMAP[6]},
     "SIS (aCS)": {
+        "line_dash": "dot",
+        "marker_symbol": "diamond",
+        "marker_color": CMAP[7]},
+    "SIS (vMFNM)": {
         "line_dash": "dot",
         "marker_symbol": "diamond",
         "marker_color": CMAP[7]},

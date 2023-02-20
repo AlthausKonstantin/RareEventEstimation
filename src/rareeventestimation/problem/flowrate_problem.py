@@ -38,7 +38,7 @@ def make_flowrate_problem(d: int,
         Vectorizer(lsf, d),
         d,
         1,
-        prob_fail_true=3.88*1e-4,
+        prob_fail_true=3.026*1e-4,
         name=f"Flow-rate Problem (d={d})"
     )
 

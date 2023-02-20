@@ -6,21 +6,19 @@ from distutils.log import warn
 from logging import info
 from numbers import Real
 from sys import float_info
-from tabnanny import verbose
 from typing import Optional
+from prettytable import PrettyTable
 from warnings import warn
-from numpy import (amax, arange, arctan, array, average, concatenate, cov, diff, exp, insert,
-                   invert, isfinite, isnan, log, log1p, maximum, minimum, nan,
-                   ndarray, pi, prod, sqrt, tanh, tril, where, sum, zeros, ones, mean, asarray)
-from numpy.linalg import norm, inv
+from numpy import (amax, arange, arctan, array, average, concatenate, cov, exp, insert,
+                   isfinite, log, log1p, maximum, minimum, nan,
+                   ndarray, pi, prod, sqrt, tanh, tril, sum, zeros, ones, mean)
 from numpy.random import default_rng, seed
 
 from scipy.optimize import minimize_scalar, root
-from scipy.special import erfc
 from scipy.stats import multivariate_normal, variation
 from scipy.stats import norm as univariat_normal
 
-from rareeventestimation.mixturemodel import GaussianMixture, MixtureModel, VMFNMixture
+from rareeventestimation.mixturemodel import MixtureModel, VMFNMixture
 from rareeventestimation.problem.problem import NormalProblem, Problem
 from rareeventestimation.solution import Solution
 from rareeventestimation.utilities import (gaussian_logpdf, get_slope, importance_sampling,
@@ -31,8 +29,7 @@ from rareeventestimation.era.ERANataf import ERANataf
 from rareeventestimation.problem.problem import Vectorizer
 from rareeventestimation.sis.SIS_aCS import SIS_aCS
 from rareeventestimation.sis.SIS_GM import SIS_GM
-from rareeventestimation.mls2mc.SIS_ENKF import sis 
-import os
+from rareeventestimation.mls2mc.SIS_VMFNM import sis 
 
 
 @dataclass
@@ -929,7 +926,8 @@ class ENKF(Solver):
                 array([enkf.pf]),
                 enkf.number_fun_eval,
                 "Success",
-                num_steps=enkf.iter
+                num_steps=enkf.iter,
+                other={"Final Iteration": array([enkf.uk])}
             )
         except Exception as e:
             warn(str(e))

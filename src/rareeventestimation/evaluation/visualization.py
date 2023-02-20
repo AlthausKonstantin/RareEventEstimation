@@ -269,9 +269,11 @@ def plot_cbree_parameters(sol:Solution, p2, plot_time=False):
     return f
 
 def add_scatter_to_subplots(fig, rows, cols, **scatter_kwargs):
-    first=True
     if "showlegend" in scatter_kwargs:
+        first= scatter_kwargs["showlegend"]
         del scatter_kwargs["showlegend"]
+    else:
+        first = False
     row_iter = range(rows) if isinstance(rows, int) else rows
     col_iter = range(cols) if isinstance(cols, int) else cols
     for i in row_iter:
@@ -355,12 +357,20 @@ def plot_iteration(iter: int, prob: Problem, sol:Solution=None, delta=1) -> Figu
         return fig
     
 
-def update_yaxes_fromat(fig: Figure, fmt:str) -> Figure:
+def update_axes_format(fig: Figure,
+                       fmt_x:str,
+                       fmt_y:str,
+                       y_exp_range=range(-10,10,1),
+                       x_exp_range=range(-10,10,1),
+                       minor_ticks=[1],
+                       secondary_y=False) -> Figure:
     """Helper function for buggy `fig.update_layout`.
     
-    Currently `fig.update_layout("yaxis_exponentformat": fmt)` is not applied
-    to all subplots. This functions does it.
-
+    Currently `fig.update_layout("yaxis_exponentformat": fmt_y)` is not applied
+    to all subplots. This functions does it for y and x axis.
+    Also set ticklabels at 1e+n for n in `y_exp_range` but draw gridlines for 
+    1e+n, 2e+n,...,9e+n,1e+(n+1) on the y axis.
+    Same is done for the x axis based on `x_exp_range`
     Args:
         fig (Figure):  Plotly figure.
         fmt (str): Valid exponentformat.
@@ -369,10 +379,36 @@ def update_yaxes_fromat(fig: Figure, fmt:str) -> Figure:
     Returns:
         fig: Plotly figure with correct yaxis label format.
     """
-    return fig.update_yaxes(exponentformat = fmt)
-
+    # Set exponentformat
+    if fmt_x is not None:
+        fig.update_xaxes(exponentformat=fmt_x)
+    if fmt_y is not None:
+        fig.update_yaxes(exponentformat=fmt_y, secondary_y=secondary_y)
+    # Set ticklabels
+    axis_ranges = {}
+    if x_exp_range is not None and fmt_x is not None:
+        axis_ranges = axis_ranges | {"xaxis": x_exp_range}
+    if y_exp_range is not None and fmt_y is not None:
+        axis_ranges = axis_ranges | {"yaxis": y_exp_range}
+    for axis, exp_range in axis_ranges.items() :
+        tickvals = []
+        ticktext =[]
+        for exponent in exp_range:
+            for minor in range(10):
+                tickvals.append(minor * 10**exponent)
+                if minor in minor_ticks:
+                    ticktext.append(("" if minor==1 else f"{minor} ") + f"10 <sup>{exponent}</sup>")
+                else:
+                    ticktext.append(" ")
+        if axis=="xaxis":
+            fig.update_xaxes({"tickvals":tickvals,
+                                "ticktext":ticktext})
+        if axis=="yaxis":
+            fig.update_yaxes({"tickvals":tickvals,
+                                "ticktext":ticktext
+                                }, secondary_y=secondary_y)
+    return fig
     
-
 def make_efficiency_plot(df_line,
                          df_box,
                          x,
@@ -382,9 +418,10 @@ def make_efficiency_plot(df_line,
                          facet_col=None,
                          shared_secondary_y_axes=False,
                          y_log=False,
-                         secondary_y_padding=[0,0],
+                         secondary_y_log=True,
                          facet_col_prefix=None,
                          facet_row_prefix=None,
+                         x_axis_sorting_key=None,
                          facet_name_sep=": ",
                          labels={}):
     """_summary_
@@ -405,12 +442,12 @@ def make_efficiency_plot(df_line,
     """
     # set up figure, maybew adapt data with help columns
     if facet_row is None:
-        df_line["fr"] = ""
-        df_box["fr"] = ""
+        df_line.loc[:,"fr"] = ""
+        df_box.loc[:,"fr"] = ""
         facet_row = "fr"
     if facet_col is None:
-        df_line["fc"] = ""
-        df_box["fc"] = ""
+        df_line.loc[:,"fc"] = ""
+        df_box.loc[:,"fc"] = ""
         facet_col = "fc"
     rows = df_line[facet_row].unique()
     cols = df_line[facet_col].unique()
@@ -447,9 +484,9 @@ def make_efficiency_plot(df_line,
             # plot boxes
             this_df_box = df_box[(df_box[facet_row] == row_name) &
                                  (df_box[facet_col] == col_name)]
-            this_df_box.sort_values(x, inplace=True)
-            xx_box = this_df_box[x].values
-            yy_box = this_df_box[y_box].values
+            this_df_box = this_df_box.sort_values(x, key=x_axis_sorting_key)
+            xx_box = this_df_box.loc[:,x].values
+            yy_box = this_df_box.loc[:,y_box].values
             box = Box(
                 x=xx_box,
                 y=yy_box,
@@ -464,6 +501,7 @@ def make_efficiency_plot(df_line,
             # plot lines
             this_df_line = df_line[(df_line[facet_row] == row_name) &
                                    (df_line[facet_col] == col_name)]
+            this_df_line = this_df_line.sort_values(x, key=x_axis_sorting_key)
             xx_line = this_df_line[x].values
             yy_line = this_df_line[y_line].values
             line = Scatter(
@@ -486,10 +524,11 @@ def make_efficiency_plot(df_line,
     # style figure
     fig.update_layout(**MY_LAYOUT)
     fig.update_layout(legend = dict(orientation = "h" ))
-    if  "yaxis_exponentformat" in MY_LAYOUT.keys():
-        fig =update_yaxes_fromat(fig, MY_LAYOUT["yaxis_exponentformat"])
-    secondary_y_limits = [int(log10(lim)) for lim in secondary_y_limits]
-    secondary_y_limits = list(map(add, secondary_y_limits, secondary_y_padding))
+    if  "yaxis_exponentformat" in MY_LAYOUT.keys() and y_log:
+        fig =update_axes_format(fig, None, MY_LAYOUT["yaxis_exponentformat"])
+    if  "yaxis_exponentformat" in MY_LAYOUT.keys() and secondary_y_log:
+        fig =update_axes_format(fig, None, MY_LAYOUT["yaxis_exponentformat"], secondary_y=True, minor_ticks=[1,5,2])
+    secondary_y_limits = [log10(lim * [0.9, 1.1][i]) for i, lim in enumerate(secondary_y_limits)]
     for row_idx in range(len(rows)):
         for col_idx in range(len(cols)):
             if shared_secondary_y_axes:
@@ -497,13 +536,12 @@ def make_efficiency_plot(df_line,
                                 row=row_idx+1,
                                 col=col_idx+1,
                                 secondary_y=True)
-            fig.update_yaxes(
-                             title="Estimates",
-                             type="log",
-                             minor_dtick="D2",
+            fig.update_yaxes(title="Estimates",
+                             type="log" if secondary_y_log else None,
                              row=row_idx+1,
                              col=col_idx+1,
                              showgrid=False,
+                             ticks="outside",
                              secondary_y=True)
             fig.update_yaxes(
                 type="log" if y_log else None,

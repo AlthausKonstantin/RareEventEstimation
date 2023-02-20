@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dir", type=str, default="/Users/konstantinalthaus/Documents/Master TUM/Masterthesis/Package/rareeventestimation/docs/benchmarking/data/cbree_sim/diffusion_sim")
+parser.add_argument("--dir", type=str, default="./docs/benchmarking/data/cbree_sim/diffusion_sim")
 parser.add_argument("--start",
                     type=int,
                     default=1)
