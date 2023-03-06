@@ -17,13 +17,14 @@ jobs:
     - uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "docs/"
+        build-command: "sphinx-build -b html docs/source/ docs/build/html"
         pre-build-command: "pip install --force-reinstall myst-parser sphinx-book-theme 'docutils<0.20,>=0.18' 'Jinja2>=3.0'"
 
     # Create an artifact of the html output.
     - uses: actions/upload-artifact@v1
       with:
         name: DocumentationHTML
-        path: docs/_build/html/
+        path: docs/build/html/
 
     # Publish built docs to gh-pages branch.
     # ===============================
