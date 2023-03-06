@@ -17,8 +17,7 @@ jobs:
     - uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "docs/"
-        pre-build-command: "pip install myst-parser sphinx-book-theme"
-        build-command: "sphinx-build -b html . _build"
+        pre-build-command: "pip install --force-reinstall myst-parser sphinx-book-theme 'docutils<0.20,>=0.18' 'Jinja2>=3.0'"
 
     # Create an artifact of the html output.
     - uses: actions/upload-artifact@v1
