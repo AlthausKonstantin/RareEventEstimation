@@ -8,17 +8,21 @@ class Solution:
     """Organize the history of the method `Solver.solve()`."""
 
     def __init__(self, ensemble_hist: ndarray, temp_hist: ndarray, lsf_eval_hist: ndarray, prob_fail_hist: ndarray, costs: int, msg: str, num_steps=None, other=None) -> None:
-        """Construct instance of Solution.
+        """
+        Construct instance of Solution.
 
-        J is the number of samples.
+        In the following,
+        J is the number of samples and
         d is the number of dimensions.
+
         Args:
             ensemble_hist (ndarray): 3-D array of shape (num_steps, J, d).
             temp_hist (ndarray): 1-D array of shape (num_steps)
             lsf_eval_hist (ndarray): 2-D array of shape (num_steps, J)
             prob_fail_hist (ndarray): 1-D array of shape (num_steps)
             costs (int): Measure of computational costs for obtaining solution.
-            msg (str): Exit message. Either 'Success' or the measssage of a caught exception
+            msg (str): Exit message. Either 'Success' or the message of a caught exception.
+            other(optional): Dictionary with other information from the solver.
         """
         self.ensemble_hist = ensemble_hist
         self.temp_hist = temp_hist

@@ -169,13 +169,14 @@ class CBREE(Solver):
                  name=None,
                  callback=None
                  ) -> None:
-        """Handle all possible keywords specifying solver options.
+        """
+        The constructor can handle the following keyword arguments.
 
         Args:
-            stepsize_adaptivity (bool|Real, optional):: Whether to update `t_step` adaptivelyCan be one of:
-                    * True
-                    * positive number: Stepsize of exponential Euler method. Corresponds to gridsize `-log(t_step)`.
-                Defaults to True
+            stepsize_adaptivity (bool|Real, optional):: Whether to update `t_step` adaptively. Defaults to `True`. Can be one of:
+                * `True`
+                * positive number: Fix stepsize of exponential Euler method. Corresponds to gridsize `-log(t_step)`.
+                
             stepsize_tolerance (float, optional): Tolerance for updating `t_step`. Defaults to 0.5.
             num_steps (int, optional): Maximal number of steps. Defaults to 100.
             tgt_fun (str, optional): Which smoothing function should be used. 
@@ -188,41 +189,46 @@ class CBREE(Solver):
                     * "sigmoid"
                 Defaults to "algebraic" if not provided or not set to one of the above.
             observation_window (int|Real, optional): How many steps should be considered for the divergence check and the average failure estimates. Defaults to 5.
-            seed (int, optional): Seed for the random number generator. Defaults to None.
-            sigma_adaptivity (str|Real, optional): Method of updating sigma. 
+            seed (int, optional): Seed for the random number generator. Defaults to `None`.
+            sigma_adaptivity (str|Real, optional): Method of updating `sigma`. 
                 Can be one of:
-                    * "cvar": Update sigma based of coefficient of variation of importance sampling weights.
-                    * "sfp": Update sigma based on share of failure particles.
-                    *  positive number: sigma is constant to this value.
+                    * "cvar": Update `sigma` based of coefficient of variation of importance sampling weights.
+                    * "sfp": Update `sigma` based on share of failure particles.
+                    *  positive number: `sigma` is constant to this value.
                 Defaults to "cvar".
-            beta_adaptivity (bool|Real, optional): Whether to update the temperature beta
+            beta_adaptivity (bool|Real, optional): Whether to update the temperature `beta`
                 Can be one of:
-                    * True
+                    * `True`
                     * positive number: Temperature is constant to this value.
-                Defaults to True
+                Defaults to `True`
             cvar_tgt (Real, optional): Stop if coefficient of variation is smaller than this and `sigma_adaptivity=="cvar"`. 
-                Is also used for updating sigma if `sigma_adaptivity=="cvar"`.
+                Is also used for updating `sigma` if `sigma_adaptivity=="cvar"`.
                 Defaults to 2.
             sfp_tgt (Real, optional): Stop if share of failure particles is greater than this and `sigma_adaptivity=="sfp"`. 
-                Is also used for updating sigma if `sigma_adaptivity=="sfp"` or 
+                Is also used for updating `sigma` if `sigma_adaptivity=="sfp"` or 
                 if sigma_adaptivity=="cvar"` and share of failure particles is smaller `sfp_tgt`
                 Defaults to 1/3.
-            ess_tgt (Real, optional): Target for relative effective sample size used to update temperature beta. Defaults to 1/2.
-            lip_sigma (Real, optional): Limits increase of sigma by `-lip_sigma*log(t_step)`. Defaults to 1.
-            divergence_check (bool, optional): Whether to check for divergence by looking at the last `observation_window` iterations. Defaults to True.
-            convergence_check (bool, optional): Whether to check for convergence by looking at the last ensemble. Defaults to True.
+            ess_tgt (Real, optional): Target for relative effective sample size used to update temperature `beta`. Defaults to 1/2.
+            lip_sigma (Real, optional): Limits increase of `sigma` by `-lip_sigma*log(t_step)`. Defaults to 1.
+            divergence_check (bool, optional): Whether to check for divergence by looking at the last `observation_window` iterations. Defaults to `True`.
+            convergence_check (bool, optional): Whether to check for convergence by looking at the last ensemble. Defaults to `True`.
             mixture_model (str, optional): Which model is used to for resampling. Defaults to "GM".
                 Can be one of:
                     * "GM"
                     * "vMFNM"
-            resample (bool, optional): Whether to resample each iteration using the density specified by `mixture_model`. Defaults to False.
-            verbose (bool, optional): Whether to print information during solving. Defaults to False.
-            save_history (bool, optional): Whether to return information of all iterations. Defaults to False.
-            return_other (bool, optional): Whether to add the flattened caches to attribute `other` of the solution. Defaults to False.
-            return_caches (bool, optional): Whether to return a list of the caches. Defaults to False.
+            resample (bool, optional): Whether to resample each iteration using the density specified by `mixture_model`. Defaults to `False`.
+            verbose (bool, optional): Whether to print information during solving. Defaults to `False`.
+            save_history (bool, optional): Whether to return information of all iterations. Defaults to `False`.
+            return_other (bool, optional): Whether to return additional information as a dictionary in the attribute `other` of the solution.
+                Defaults to `False`. 
+                The dictionary contains among other the keys the averaged estimates based on the last `observation_window` previous iterations:
+                    * "Average Estimate": Uniform average of the `observation_window` last estimates. (best)
+                    * "Root Weighted Average Estimate": Weighted average of the `observation_window` last estimates. Weights decay proportional to `sqrt(final_iteration - iteration)`. (good default choice)
+                    * "VAR Weighted Average Estimate": Weighted Average Estimate": Weighted average of the `observation_window` last estimates. Weights are proportional to the inverse of the estimates coefficient of variation. (unstable)
+            return_caches (bool, optional): Whether to return a list of the caches. Defaults to `False`.
+                Mainly for debugging and more intricate testing.
             name (str, optional): Name of the solver. Defaults to "CBREE".
-            name (Callable, optional): Apply this function to the current CBREECache after each iteration.
-            Defaults to None.
+            callback (Callable, optional): Apply this function to the current `CBREECache` after each iteration. Defaults to None.
         """
         super().__init__()
         if stepsize_adaptivity is True:
@@ -860,12 +866,16 @@ class CBREE(Solver):
 
 
 class ENKF(Solver):
-    """ Wrapper for code from Fabian Wagner."""
+    """ 
+    This class is a wrapper for code from Fabian Wagner.
+    Please consult the credits section of the package's readme file.
+    """
 
     def __init__(self, **kwargs) -> None:
-        """"Make instance of ENKF and handle all keywords.
+        """
+        The constructor can handle the following keyword arguments.
 
-        Optional Keyword Arguments:
+        Args:
             cvar_tgt:  Stop if coefficient of variation is smaller than this, Defaults to 1.
             mixture_model: Which model is used to for resampling. Defaults to "GM".
                 Can be one of:
@@ -940,15 +950,19 @@ class ENKF(Solver):
 
 
 class SIS(Solver):
-    """Wrapper for SIS code from Engineering Risk Analysis Group, TU Munich."""
+    """ 
+    This class is a wrapper for code from the Engineering Risk Analysis Group, TU Munich.
+    Please consult the credits section of the package's readme file.
+    """
 
     def __init__(self, **kwargs) -> None:
-        """Handle all possible keywords specifying solver options.
+        """
+        The constructor can handle the following keyword arguments.
 
-        Optional Keyword Arguments:
-            num_chains_wrt_sample Use `num_chains_wrt_sample`*sample size number of chains for the MCMC routine.
+        Args:
+            num_chains_wrt_sample: Use `num_chains_wrt_sample`*sample-size number of chains for the MCMC routine.
             burn_in: burn-in period for MCMC routine.
-            cvar_tgt (Real, optional): Stop if coefficient of variation is smaller than this
+            cvar_tgt (Real, optional): Stop if coefficient of variation is smaller than this. Defaults to 1.
             mixture_model (str, optional): Which method is used to for resampling. Defaults to "GM".
                 Can be one of:
                     * "GM"
@@ -956,7 +970,7 @@ class SIS(Solver):
                     * "vMFNM"
             num_comps: Number of components for multimodal problems. Defaults to 1.
             seed (int, optional): Seed for the random number generator. Defaults to None.
-            fixed_initial_sample (bool): Whether to us the initial sample provided by `prob` ins `solve`.
+            fixed_initial_sample (bool): Whether to use the initial sample provided by `prob` in `solve`.
                 Defaults to True.
             verbose (bool, optional): Whether to print information during solving. Defaults to False.
             return_other (bool, optional): Whether to return the final number of components
@@ -1075,6 +1089,14 @@ class CMC(Solver):
     def __init__(self, num_runs: int,
                  seed: int = None,
                  verbose=True) -> None:
+        """
+        The constructor can handle the following keyword arguments.
+
+        Args:
+            num_runs (int): How often to sample from the problems distribution.
+            seed (int, optional): Seed for sampling from the problems distribution. Defaults to None.
+            verbose (bool, optional): Whether to print information during solving. Defaults to True.
+        """
 
         super().__init__()
         self.num_runs = num_runs

@@ -13,17 +13,18 @@ class Problem:
     """"The Problem class formulates a rare event estimation problem."""
 
     def __init__(self, lsf: Callable, e_fun: Callable, sample: ndarray, sample_gen=None, prob_fail_true=None, mpp=None, eranataf_dist=None, hints=None, name=None):
-        """Make an instance of the Problem class.
+        """
+        Make an instance of the Problem class.
 
         Args:
             lsf (Callable):  Handle to limit state function.
-            e_fun (Callable): Energy function of target distribution, i.e. the negative logarithm of the pdf without normalization.
-            sample (ndarray): Sample of the target distribution. Each row is one sample
-            sample_gen ([calable], optional): Handle to generate a sample of target distribution. Takes sample size as its only argument and an optional kwarg seed. Defaults to None.
-            prob_fail_true ([float], optional): True probability of failure. If provided error plos can be made. Defaults to None.
+            e_fun (Callable): Energy function of the  distribution of the states, i.e. the negative logarithm of the state pdf without normalization.
+            sample (ndarray): Sample of the states' distribution. Each row is one sample
+            sample_gen ([calable], optional): Handle to generate a sample of states' distribution. Takes sample size as its only argument and an optional seed. Defaults to None.
+            prob_fail_true ([float], optional): True probability of failure. If provided error plots can be made. Defaults to None.
             eranataf_dist ([type], optional): Target distribution as an instance of the ERANataf class. Defaults to None.
             hints (dict, optional): Dictionary with keyword arguments for solver
-            name ([str],optional): Name of problem for stringification
+            name (str,optional): Name of problem for stringification
         """
         self.lsf = lsf
         self.e_fun = e_fun
@@ -39,7 +40,7 @@ class Problem:
         else:
             self.hints = {}
         if name is None:
-            self.name = f"Unknown Problem at {id(self)}"
+            self.name = f"Unnamed Problem at {id(self)}"
         else:
             self.name = name
 
@@ -69,13 +70,19 @@ class NormalProblem(Problem):
     """
 
     def __init__(self, lsf: Callable, dim: int, sample_size: int, prob_fail_true=None, mpp=None, hints=None, name=None):
-        """Construcor if distribution is standard normal.
+        """
+        Constructor if distribution is standard normal.
 
         Args:
             lsf (Callable): Handle to limit state function.
             dim (int): Dimension of the multivariate normal distribution.
             sample_size (int): Initial sample size.
-            prob_fail_true ([type], optional): True probability of failure. Defaults to None.
+            prob_fail_true (optional): True probability of failure. Defaults to None.
+                Can be used for performance evaluations in postprocessing.
+            mpp (optional): Most probable point of failure. Defaults to None.
+                Can be used for performance evaluations in postprocessing.
+            hints (dict, optional): Dictionary with keyword arguments for solver.
+            name (str,optional): Name of problem for stringification.
         """
 
         # Define distribution as an ERANataf

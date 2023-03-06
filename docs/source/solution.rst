@@ -1,0 +1,4 @@
+Solution
+========
+
+.. autoclass:: rareeventestimation.Solution
