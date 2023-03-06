@@ -16,8 +16,9 @@ jobs:
     - uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "docs/"
-
-    # Great extra actions to compose with:
+    - name: Install denpendencies for sphinx
+      run: |
+        pip install myst-parser sphinx-book-theme
     # Create an artifact of the html output.
     - uses: actions/upload-artifact@v1
       with:
