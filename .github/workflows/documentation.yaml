@@ -12,13 +12,13 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     # Standard drop-in approach that should work for most people.
     - uses: ammaraskar/sphinx-action@master
       with:
         docs-folder: "docs/"
         build-command: "sphinx-build -b html source/ build/html"
-        pre-build-command: "pip install --force-reinstall myst-parser sphinx-book-theme 'docutils<0.20,>=0.18' 'Jinja2>=3.0'"
+        pre-build-command: "pip install $GITHUB_WORKSPACE && pip install --force-reinstall myst-parser sphinx-book-theme 'docutils<0.20,>=0.18' 'Jinja2>=3.0'"
 
     # Create an artifact of the html output.
     - uses: actions/upload-artifact@v3
