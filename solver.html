@@ -1,0 +1,586 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Solvers &#8212; rareeventestimation 16/05/22 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" href="_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=12da95d707ffb74b382d" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=12da95d707ffb74b382d" />
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'solver';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Solution" href="solution.html" />
+    <link rel="prev" title="Problem" href="problem.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    <p class="title logo__title">rareeventestimation 16/05/22 documentation</p>
+  
+</a></div>
+        <div class="sidebar-primary-item"><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="link_to_readme.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="problem.html">Problem</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Solvers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="solution.html">Solution</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+<a href="https://github.com/AlthausKonstantin/rareeventestimation" target="_blank"
+   class="btn btn-sm btn-source-repository-button"
+   title="Source repository"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+
+</a>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/solver.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script>
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Solvers</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.CBREE"><code class="docutils literal notranslate"><span class="pre">CBREE</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.SIS"><code class="docutils literal notranslate"><span class="pre">SIS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.ENKF"><code class="docutils literal notranslate"><span class="pre">ENKF</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.CMC"><code class="docutils literal notranslate"><span class="pre">CMC</span></code></a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="solvers">
+<h1>Solvers<a class="headerlink" href="#solvers" title="Permalink to this heading">#</a></h1>
+<p>The package contains several solvers for rare event estimation problems.
+If you initialize a solver object, you can specify some options which are described here.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="rareeventestimation.CBREE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rareeventestimation.</span></span><span class="sig-name descname"><span class="pre">CBREE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stepsize_adaptivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stepsize_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tgt_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'algebraic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">observation_window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_adaptivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cvar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_adaptivity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cvar_tgt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sfp_tgt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3333333333333333</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ess_tgt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lip_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">divergence_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convergence_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mixture_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'GM'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_history</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_other</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_caches</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rareeventestimation.CBREE" title="Permalink to this definition">#</a></dt>
+<dd><p>Instances of this class hold all the options for consensus based sampling.</p>
+<p>Set solver options in the constructor.
+Use method solve to apply consensus based sampling to a problem.</p>
+<p>The constructor can handle the following keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stepsize_adaptivity</strong> (<em>bool</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – <ul>
+<li><p><cite>True</cite></p></li>
+<li><p>positive number: Fix stepsize of exponential Euler method. Corresponds to gridsize <cite>-log(t_step)</cite>.</p></li>
+</ul>
+</p></li>
+<li><p><strong>stepsize_tolerance</strong> (<em>float</em><em>, </em><em>optional</em>) – Tolerance for updating <cite>t_step</cite>. Defaults to 0.5.</p></li>
+<li><p><strong>num_steps</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximal number of steps. Defaults to 100.</p></li>
+<li><p><strong>tgt_fun</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Which smoothing function should be used.
+Can be one of:</p>
+<blockquote>
+<div><ul>
+<li><p>”algebraic”</p></li>
+<li><p>”tanh”</p></li>
+<li><p>”arctan”</p></li>
+<li><p>”erf”</p></li>
+<li><p>”relu”</p></li>
+<li><p>”sigmoid”</p></li>
+</ul>
+</div></blockquote>
+<p>Defaults to “algebraic” if not provided or not set to one of the above.</p>
+</p></li>
+<li><p><strong>observation_window</strong> (<em>int</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – How many steps should be considered for the divergence check and the average failure estimates. Defaults to 5.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em>, </em><em>optional</em>) – Seed for the random number generator. Defaults to <cite>None</cite>.</p></li>
+<li><p><strong>sigma_adaptivity</strong> (<em>str</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – <p>Method of updating <cite>sigma</cite>.
+Can be one of:</p>
+<blockquote>
+<div><ul>
+<li><p>”cvar”: Update <cite>sigma</cite> based of coefficient of variation of importance sampling weights.</p></li>
+<li><p>”sfp”: Update <cite>sigma</cite> based on share of failure particles.</p></li>
+<li><p>positive number: <cite>sigma</cite> is constant to this value.</p></li>
+</ul>
+</div></blockquote>
+<p>Defaults to “cvar”.</p>
+</p></li>
+<li><p><strong>beta_adaptivity</strong> (<em>bool</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – <p>Whether to update the temperature <cite>beta</cite>
+Can be one of:</p>
+<blockquote>
+<div><ul>
+<li><p><cite>True</cite></p></li>
+<li><p>positive number: Temperature is constant to this value.</p></li>
+</ul>
+</div></blockquote>
+<p>Defaults to <cite>True</cite></p>
+</p></li>
+<li><p><strong>cvar_tgt</strong> (<em>Real</em><em>, </em><em>optional</em>) – Stop if coefficient of variation is smaller than this and <cite>sigma_adaptivity==”cvar”</cite>.
+Is also used for updating <cite>sigma</cite> if <cite>sigma_adaptivity==”cvar”</cite>.
+Defaults to 2.</p></li>
+<li><p><strong>sfp_tgt</strong> (<em>Real</em><em>, </em><em>optional</em>) – Stop if share of failure particles is greater than this and <cite>sigma_adaptivity==”sfp”</cite>.
+Is also used for updating <cite>sigma</cite> if <cite>sigma_adaptivity==”sfp”</cite> or
+if sigma_adaptivity==”cvar”` and share of failure particles is smaller <cite>sfp_tgt</cite>
+Defaults to 1/3.</p></li>
+<li><p><strong>ess_tgt</strong> (<em>Real</em><em>, </em><em>optional</em>) – Target for relative effective sample size used to update temperature <cite>beta</cite>. Defaults to 1/2.</p></li>
+<li><p><strong>lip_sigma</strong> (<em>Real</em><em>, </em><em>optional</em>) – Limits increase of <cite>sigma</cite> by <cite>-lip_sigma*log(t_step)</cite>. Defaults to 1.</p></li>
+<li><p><strong>divergence_check</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to check for divergence by looking at the last <cite>observation_window</cite> iterations. Defaults to <cite>True</cite>.</p></li>
+<li><p><strong>convergence_check</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to check for convergence by looking at the last ensemble. Defaults to <cite>True</cite>.</p></li>
+<li><p><strong>mixture_model</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Which model is used to for resampling. Defaults to “GM”.
+Can be one of:</p>
+<blockquote>
+<div><ul>
+<li><p>”GM”</p></li>
+<li><p>”vMFNM”</p></li>
+</ul>
+</div></blockquote>
+</p></li>
+<li><p><strong>resample</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to resample each iteration using the density specified by <cite>mixture_model</cite>. Defaults to <cite>False</cite>.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to print information during solving. Defaults to <cite>False</cite>.</p></li>
+<li><p><strong>save_history</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return information of all iterations. Defaults to <cite>False</cite>.</p></li>
+<li><p><strong>return_other</strong> (<em>bool</em><em>, </em><em>optional</em>) – <p>Whether to return additional information as a dictionary in the attribute <cite>other</cite> of the solution.
+Defaults to <cite>False</cite>.
+The dictionary contains among other the keys the averaged estimates based on the last <cite>observation_window</cite> previous iterations:</p>
+<blockquote>
+<div><ul>
+<li><p>”Average Estimate”: Uniform average of the <cite>observation_window</cite> last estimates. (best)</p></li>
+<li><p>”Root Weighted Average Estimate”: Weighted average of the <cite>observation_window</cite> last estimates. Weights decay proportional to <cite>sqrt(final_iteration - iteration)</cite>. (good default choice)</p></li>
+<li><p>”VAR Weighted Average Estimate”: Weighted Average Estimate”: Weighted average of the <cite>observation_window</cite> last estimates. Weights are proportional to the inverse of the estimates coefficient of variation. (unstable)</p></li>
+</ul>
+</div></blockquote>
+</p></li>
+<li><p><strong>return_caches</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return a list of the caches. Defaults to <cite>False</cite>.
+Mainly for debugging and more intricate testing.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the solver. Defaults to “CBREE”.</p></li>
+<li><p><strong>callback</strong> (<em>Callable</em><em>, </em><em>optional</em>) – Apply this function to the current <cite>CBREECache</cite> after each iteration. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rareeventestimation.SIS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rareeventestimation.</span></span><span class="sig-name descname"><span class="pre">SIS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rareeventestimation.SIS" title="Permalink to this definition">#</a></dt>
+<dd><p>This class is a wrapper for code from the Engineering Risk Analysis Group, TU Munich.
+Please consult the credits section of the package’s readme file.</p>
+<p>The constructor can handle the following keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_chains_wrt_sample</strong> – Use <a href="#id1"><span class="problematic" id="id2">`</span></a>num_chains_wrt_sample`*sample-size number of chains for the MCMC routine.</p></li>
+<li><p><strong>burn_in</strong> – burn-in period for MCMC routine.</p></li>
+<li><p><strong>cvar_tgt</strong> (<em>Real</em><em>, </em><em>optional</em>) – Stop if coefficient of variation is smaller than this. Defaults to 1.</p></li>
+<li><p><strong>mixture_model</strong> (<em>str</em><em>, </em><em>optional</em>) – <p>Which method is used to for resampling. Defaults to “GM”.
+Can be one of:</p>
+<blockquote>
+<div><ul>
+<li><p>”GM”</p></li>
+<li><p>”aCS”</p></li>
+<li><p>”vMFNM”</p></li>
+</ul>
+</div></blockquote>
+</p></li>
+<li><p><strong>num_comps</strong> – Number of components for multimodal problems. Defaults to 1.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em>, </em><em>optional</em>) – Seed for the random number generator. Defaults to None.</p></li>
+<li><p><strong>fixed_initial_sample</strong> (<em>bool</em>) – Whether to use the initial sample provided by <cite>prob</cite> in <cite>solve</cite>.
+Defaults to True.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to print information during solving. Defaults to False.</p></li>
+<li><p><strong>return_other</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to return the final number of components
+and coefficient of variation of the weights.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rareeventestimation.ENKF">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rareeventestimation.</span></span><span class="sig-name descname"><span class="pre">ENKF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rareeventestimation.ENKF" title="Permalink to this definition">#</a></dt>
+<dd><p>This class is a wrapper for code from Fabian Wagner.
+Please consult the credits section of the package’s readme file.</p>
+<p>The constructor can handle the following keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cvar_tgt</strong> – Stop if coefficient of variation is smaller than this, Defaults to 1.</p></li>
+<li><p><strong>mixture_model</strong> – <p>Which model is used to for resampling. Defaults to “GM”.
+Can be one of:</p>
+<blockquote>
+<div><ul>
+<li><p>”GM”</p></li>
+<li><p>”vMFNM”</p></li>
+</ul>
+</div></blockquote>
+</p></li>
+<li><p><strong>num_steps</strong> – Maximal number of steps. Defaults to 100.</p></li>
+<li><p><strong>num_comps</strong> – Number of components for multimodal problems. Defaults to 1.</p></li>
+<li><p><strong>localize</strong> – Whether to use local covariances.</p></li>
+<li><p><strong>seed</strong> – Seed for the random number generator. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rareeventestimation.CMC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rareeventestimation.</span></span><span class="sig-name descname"><span class="pre">CMC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_runs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rareeventestimation.CMC" title="Permalink to this definition">#</a></dt>
+<dd><p>Crude Monte Carlo simulation.</p>
+<p>The constructor can handle the following keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_runs</strong> (<em>int</em>) – How often to sample from the problems distribution.</p></li>
+<li><p><strong>seed</strong> (<em>int</em><em>, </em><em>optional</em>) – Seed for sampling from the problems distribution. Defaults to None.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to print information during solving. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+
+              
+              
+                <footer class="bd-footer-article">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="problem.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Problem</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="solution.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Solution</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.CBREE"><code class="docutils literal notranslate"><span class="pre">CBREE</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.SIS"><code class="docutils literal notranslate"><span class="pre">SIS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.ENKF"><code class="docutils literal notranslate"><span class="pre">ENKF</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rareeventestimation.CMC"><code class="docutils literal notranslate"><span class="pre">CMC</span></code></a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            <div class="bd-footer-content__inner">
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Konstantin Althaus
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  <p class="copyright">
+    
+      © Copyright 2023, Konstantin Althaus.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div></div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=12da95d707ffb74b382d"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=12da95d707ffb74b382d"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
