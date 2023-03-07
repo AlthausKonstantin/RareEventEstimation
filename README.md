@@ -16,7 +16,7 @@ By construction the probability of failure is small and additionally, the evalua
 This package contains algorithm for the numerical estimation of $P_f$.
 Here is an example with the standard assumption $\pi \sim \mathcal{N}(0,I_d)$:
 
-```
+```python
 import rareeventestimation as ree
 from numpy import ndarray, sum, sqrt
 
