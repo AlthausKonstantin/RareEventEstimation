@@ -9,24 +9,30 @@ repository = "https://github.com/AlthausKonstantin/rareeventestimation"
 homepage = "https://pypi.org/project/rareeventestimation/"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
-numpy = "^1.22.3"
-scipy = "^1.8.1"
-pandas = "^1.4.2"
-plotly = "^5.8.0"
-prettytable = "^3.3.0"
-Pillow = "^9.1.1"
-argparse = "^1.4.0"
-matplotlib = "^3.5.2"
-ipython = "^8.4.0"
-nbconvert = "^6.5.0"
-notebook = "^6.4.12"
+python = ">=3.8"
+numpy = ">=1.22.3"
+scipy = ">=1.8.1"
+pandas = ">=1.4.2"
+plotly = ">=5.8.0"
+prettytable = ">=3.3.0"
+Pillow = ">=9.1.1"
+argparse = ">=1.4.0"
+matplotlib = ">=3.5.2"
+ipython = ">=8.4.0"
+nbconvert = ">=6.5.0"
+notebook = ">=6.4.12"
 jupyter-core = ">=4.11.2"
 pytest = ">=7.2.0"
-scikit-fem = "^7.0.1"
+scikit-fem = ">=7.0.1"
 
 [tool.poetry.dev-dependencies]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "serial",
+]
