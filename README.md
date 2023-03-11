@@ -1,4 +1,5 @@
 # rareeventestimation
+[![documentation](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/documentation.yaml/badge.svg?branch=master)](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/documentation.yaml)
 Estimate rare events with consensus based sampling and other methods.
 
 ## Installation

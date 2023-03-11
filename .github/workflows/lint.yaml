@@ -1,0 +1,27 @@
+name: Run linter
+
+on: [push]
+
+jobs:
+  lint:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+      - name: Run black
+        run: black .
+      - name: Lint with flake8
+        # E501: ignore long lines, too lazy to fix it
+        # W503: ignore line breaks before binary operator, not deemed useful
+        # E203: ignore whitespace before ":", not deemed useful
+        run: flake8 --ignore=W503,E203 --show-source --statistics --count --exit-zero .
