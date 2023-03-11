@@ -317,7 +317,8 @@ Use method solve to apply consensus based sampling to a problem.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>stepsize_adaptivity</strong> (<em>bool</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – <ul>
+<li><p><strong>stepsize_adaptivity</strong> (<em>bool</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – </p></li>
+<li><p><strong>of</strong> (<em>Can be one</em>) – <ul>
 <li><p><cite>True</cite></p></li>
 <li><p>positive number: Fix stepsize of exponential Euler method. Corresponds to gridsize <cite>-log(t_step)</cite>.</p></li>
 </ul>
@@ -338,7 +339,8 @@ Can be one of:</p>
 </div></blockquote>
 <p>Defaults to “algebraic” if not provided or not set to one of the above.</p>
 </p></li>
-<li><p><strong>observation_window</strong> (<em>int</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – How many steps should be considered for the divergence check and the average failure estimates. Defaults to 5.</p></li>
+<li><p><strong>observation_window</strong> (<em>int</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – How many steps should be considered for the divergence check</p></li>
+<li><p><strong>5.</strong> (<em>and the average failure estimates. Defaults to</em>) – </p></li>
 <li><p><strong>seed</strong> (<em>int</em><em>, </em><em>optional</em>) – Seed for the random number generator. Defaults to <cite>None</cite>.</p></li>
 <li><p><strong>sigma_adaptivity</strong> (<em>str</em><em>|</em><em>Real</em><em>, </em><em>optional</em>) – <p>Method of updating <cite>sigma</cite>.
 Can be one of:</p>
