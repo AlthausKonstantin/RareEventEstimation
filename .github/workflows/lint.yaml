@@ -1,4 +1,4 @@
-name: Run linter
+name: Run black
 
 on: [push]
 
@@ -17,11 +17,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 black
+          pip install black
       - name: Run black
-        run: black .
-      - name: Lint with flake8
-        # E501: ignore long lines, too lazy to fix it
-        # W503: ignore line breaks before binary operator, not deemed useful
-        # E203: ignore whitespace before ":", not deemed useful
-        run: flake8 --ignore=W503,E203 --show-source --statistics --count --exit-zero .
+        id: action_black
+        uses: psf/black@stable
+      - name: Create Pull Request
+        if: steps.action_black.outputs.is_formatted == 'true'
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Format Python code with psf/black push"
+          commit-message: "chore: Format Python code with psf/black"
+          body: |
+            There appear to be some python formatting errors in ${{ github.sha }}. This pull request
+            uses the [psf/black](https://github.com/psf/black) formatter to fix these issues.
+          base: ${{ github.head_ref }} # Creates pull request onto pull request or commit branch
+          branch: actions/black

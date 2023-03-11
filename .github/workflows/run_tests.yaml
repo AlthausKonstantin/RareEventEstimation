@@ -1,12 +1,7 @@
 # example from https://github.com/marketplace/actions/install-poetry-action#testing
 name: test
 
-on: 
-  pull_request:
-  push:
-    branches:
-      - main
-
+on: [pull_request, push]
 jobs:
   test:
     runs-on: ubuntu-latest
