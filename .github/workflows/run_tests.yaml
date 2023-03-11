@@ -56,8 +56,7 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          coverage run -m pytest  -m "not slow" test/test_cbree.py
-
+          coverage run -m pytest  -m "not slow" test
       - name: Make Coverage Badge
         uses: tj-actions/coverage-badge-py@v2
 
