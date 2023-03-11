@@ -1,7 +1,10 @@
 # rareeventestimation
-[![documentation](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/documentation.yaml/badge.svg?branch=master)](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/documentation.yaml)
 Estimate rare events with consensus based sampling and other methods.
+[![coverage](https://raw.githubusercontent.com/AlthausKonstantin/rareeventestimation/gh-pages/_static/images/coverage_badge.svg)](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/run_tests.yaml)
 
+[![test](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/run_tests.yaml/badge.svg)](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/run_tests.yaml)
+
+[![build documentation](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/build_documentation.yaml/badge.svg)](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/build_documentation.yaml)
 ## Installation
 ```bash
 $ pip install rareeventestimation
