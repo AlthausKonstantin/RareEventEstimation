@@ -2,7 +2,6 @@
 from typing import Callable
 
 from numpy import apply_along_axis, array, ndarray, ndenumerate, zeros, nan, prod, eye
-from scipy.stats import multivariate_normal
 
 from rareeventestimation.era.ERANataf import ERANataf
 from rareeventestimation.era.ERADist import ERADist
@@ -10,9 +9,20 @@ from rareeventestimation.utilities import gaussian_logpdf
 
 
 class Problem:
-    """"The Problem class formulates a rare event estimation problem."""
+    """ "The Problem class formulates a rare event estimation problem."""
 
-    def __init__(self, lsf: Callable, e_fun: Callable, sample: ndarray, sample_gen=None, prob_fail_true=None, mpp=None, eranataf_dist=None, hints=None, name=None):
+    def __init__(
+        self,
+        lsf: Callable,
+        e_fun: Callable,
+        sample: ndarray,
+        sample_gen=None,
+        prob_fail_true=None,
+        mpp=None,
+        eranataf_dist=None,
+        hints=None,
+        name=None,
+    ):
         """
         Make an instance of the Problem class.
 
@@ -54,7 +64,8 @@ class Problem:
         """
         if isinstance(arg, int):
             assert hasattr(
-                self, "sample_gen"), "Problem has no sample generator. Provide a sample as a ndarray!"
+                self, "sample_gen"
+            ), "Problem has no sample generator. Provide a sample as a ndarray!"
             self.sample = self.sample_gen(arg, seed=seed)
         elif isinstance(arg, ndarray) and (arg.shape[-1] == self.sample.shape[-1]):
             self.sample = arg
@@ -64,12 +75,21 @@ class Problem:
 
 
 class NormalProblem(Problem):
-    """ This class defines a special kind of rare event estimation problem.
+    """This class defines a special kind of rare event estimation problem.
     It assumes that the lsf operates on the standard normal space.
     Thus the energy function and the sample distrubtion are known (standard normal).
     """
 
-    def __init__(self, lsf: Callable, dim: int, sample_size: int, prob_fail_true=None, mpp=None, hints=None, name=None):
+    def __init__(
+        self,
+        lsf: Callable,
+        dim: int,
+        sample_size: int,
+        prob_fail_true=None,
+        mpp=None,
+        hints=None,
+        name=None,
+    ):
         """
         Constructor if distribution is standard normal.
 
@@ -86,17 +106,28 @@ class NormalProblem(Problem):
         """
 
         # Define distribution as an ERANataf
-        marginals = [ERADist('standardnormal', 'PAR', nan) for _ in range(dim)]
+        marginals = [ERADist("standardnormal", "PAR", nan) for _ in range(dim)]
         eranataf_dist = ERANataf(marginals, eye(dim))
 
-        def e_fun(x): return -gaussian_logpdf(x)
+        def e_fun(x):
+            return -gaussian_logpdf(x)
 
-        def sample_gen(sample_size, seed=None): return eranataf_dist.random(
-            n=sample_size, seed=seed)
+        def sample_gen(sample_size, seed=None):
+            return eranataf_dist.random(n=sample_size, seed=seed)
+
         sample = sample_gen(sample_size)
 
-        super().__init__(lsf, e_fun, sample, sample_gen=sample_gen,
-                         prob_fail_true=prob_fail_true, mpp=mpp, eranataf_dist=eranataf_dist, hints=hints, name=name)
+        super().__init__(
+            lsf,
+            e_fun,
+            sample,
+            sample_gen=sample_gen,
+            prob_fail_true=prob_fail_true,
+            mpp=mpp,
+            eranataf_dist=eranataf_dist,
+            hints=hints,
+            name=name,
+        )
 
 
 class Vectorizer:
@@ -107,6 +138,7 @@ class Vectorizer:
         A 2-d arrray. Each row represents a point in the domain of the lsf. Returns a 1d array: The lsf evaluations in the rows.
         A k tuple `xi' of k-d arrays: Returns a k-d array of a meshgrid evaulation.
     """
+
     num_evals = 0
 
     def __init__(self, lsf: Callable, d: int, lsf_2d=None, lsf_msh=None) -> None:
@@ -125,14 +157,19 @@ class Vectorizer:
             self.num_evals = 0
         else:
             if lsf_2d is None:
-                def lsf_2d(xx): return apply_along_axis(lsf, 1, xx)
+
+                def lsf_2d(xx):
+                    return apply_along_axis(lsf, 1, xx)
+
             if lsf_msh is None:
+
                 def lsf_msh(*xi):
                     dims = xi[0].shape
                     out = zeros(dims)
-                    for (idx, _) in ndenumerate(out):
+                    for idx, _ in ndenumerate(out):
                         val = array([x[idx] for x in xi])
                         out[idx] = lsf(val)
+
             self.d = d
             self.lsf_1d = lsf
             self.lsf_2d = lsf_2d
@@ -153,7 +190,9 @@ class Vectorizer:
             # Evaluation of rows
             self.num_evals = self.num_evals + args[0].shape[0]
             return self.lsf_2d(args[0])
-        if len(args) == self.d and all([x.ndim == self.d and x.shape == args[0].shape for x in args]):
+        if len(args) == self.d and all(
+            [x.ndim == self.d and x.shape == args[0].shape for x in args]
+        ):
             # Meshgrid evaluation
             self.num_evals = self.num_evals + prod(args[0].shape)
             self.lsf_msh(args)

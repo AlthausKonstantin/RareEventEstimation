@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import norm
 from scipy.optimize import fminbound
 from rareeventestimation.era.MCMC import MCMC
+
 """
 ---------------------------------------------------------------------------
 Multilevel Sequential² Monte Carlo for rare event estimation
@@ -52,8 +53,19 @@ Based on:
 """
 
 
-def sis(n, p, g, burn, tar_cov, dim, mcmc_type='vMFNM', k_init=1, initial_sample=None, seed=None,  verbose=False):
-
+def sis(
+    n,
+    p,
+    g,
+    burn,
+    tar_cov,
+    dim,
+    mcmc_type="vMFNM",
+    k_init=1,
+    initial_sample=None,
+    seed=None,
+    verbose=False,
+):
     if seed is not None:
         np.random.seed(seed=seed)
     # %% Initialization of variables and storage
@@ -96,7 +108,6 @@ def sis(n, p, g, burn, tar_cov, dim, mcmc_type='vMFNM', k_init=1, initial_sample
     # %% Iteration
     m = 0
     for m in range(max_it):
-
         # Perform Tempering
         number_tempering = number_tempering + 1
         if verbose:
@@ -108,17 +119,17 @@ def sis(n, p, g, burn, tar_cov, dim, mcmc_type='vMFNM', k_init=1, initial_sample
 
             def func(x):
                 w = norm.cdf(-gk / x)
-                return (np.std(w) / np.mean(w) - tar_cov)**2
+                return (np.std(w) / np.mean(w) - tar_cov) ** 2
 
             sigma2 = fminbound(func, 0, 10.0 * gmu, xtol=1e-15)
-            sigmak[m+1] = sigma2
+            sigmak[m + 1] = sigma2
             wk = norm.cdf(-gk / sigmak[m + 1])
 
         if m > 0:
 
             def func(x):
                 w = norm.cdf(-gk / x) / norm.cdf(-gk / sigmak[m])
-                return abs(np.std(w) / np.mean(w) - tar_cov)**2
+                return abs(np.std(w) / np.mean(w) - tar_cov) ** 2
 
             sigma2 = fminbound(func, 0, sigmak[m], xtol=1e-15)
             sigmak[m + 1] = sigma2
@@ -135,41 +146,65 @@ def sis(n, p, g, burn, tar_cov, dim, mcmc_type='vMFNM', k_init=1, initial_sample
         def limit_state_fun(u):
             return g(u)
 
-        dist = MCMC(uk=uk, gk_current=gk, wnork=wnork, nchain=nchain, burn=burn,
-                    limit_state_fun_current=limit_state_fun, sigma=sigmak[m + 1], mcmc_type=mcmc_type, k_init=k_init)
+        dist = MCMC(
+            uk=uk,
+            gk_current=gk,
+            wnork=wnork,
+            nchain=nchain,
+            burn=burn,
+            limit_state_fun_current=limit_state_fun,
+            sigma=sigmak[m + 1],
+            mcmc_type=mcmc_type,
+            k_init=k_init,
+        )
         dist.mcmc_procedure_tempering()
         uk = dist.uk
         gk = dist.gk_current
 
-        number_fun_eval = number_fun_eval + nchain*(burn+nsamlev/nchain)
-        computational_cost = computational_cost + nchain*(burn+nsamlev/nchain)
+        number_fun_eval = number_fun_eval + nchain * (burn + nsamlev / nchain)
+        computational_cost = computational_cost + nchain * (burn + nsamlev / nchain)
         # save samples
         samples_u.append(uk.T)
 
         # compute mean acceptance rate of all chains in level m
         accrate.append(np.mean(dist.alphak))
 
-        if sigmak[m+1] == 0:
+        if sigmak[m + 1] == 0:
             cov_sl = np.nan
-        elif not(any(gk < 0)):
+        elif not (any(gk < 0)):
             cov_sl = np.nan
         else:
-            cov_sl = np.std((gk < 0) / norm.cdf(-gk / sigmak[m+1])) \
-                     / np.mean((gk < 0) / norm.cdf(-gk / sigmak[m+1]))
+            cov_sl = np.std((gk < 0) / norm.cdf(-gk / sigmak[m + 1])) / np.mean(
+                (gk < 0) / norm.cdf(-gk / sigmak[m + 1])
+            )
 
         if verbose:
-            print('\nCOV_Sl =', cov_sl)
-            print('\t*aCS sigma =', dist.sigmafk, '\t*aCS accrate =', accrate[len(accrate)-1])
+            print("\nCOV_Sl =", cov_sl)
+            print(
+                "\t*aCS sigma =",
+                dist.sigmafk,
+                "\t*aCS accrate =",
+                accrate[len(accrate) - 1],
+            )
 
         if cov_sl < tar_cov:
             break
 
     # %% Calculation of the Probability of failure
     const = np.prod(sk)
-    tmp1 = (gk < 0)
-    tmp2 = -gk / sigmak[m+1]
+    tmp1 = gk < 0
+    tmp2 = -gk / sigmak[m + 1]
     tmp3 = norm.cdf(tmp2)
     tmp4 = tmp1 / tmp3
     pf = np.mean(tmp4) * const
 
-    return pf, number_tempering, sigmak[0:m + 2], number_fun_eval, computational_cost, accrate[0:len(accrate)-1], uk[None,...], gk
+    return (
+        pf,
+        number_tempering,
+        sigmak[0 : m + 2],
+        number_fun_eval,
+        computational_cost,
+        accrate[0 : len(accrate) - 1],
+        uk[None, ...],
+        gk,
+    )

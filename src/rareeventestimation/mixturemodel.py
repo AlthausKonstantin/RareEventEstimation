@@ -1,12 +1,29 @@
-
-from numpy import argmax, moveaxis, nan, ndarray, ones, zeros, matmul,eye, average, zeros_like, exp, log
+from numpy import (
+    argmax,
+    moveaxis,
+    nan,
+    ndarray,
+    ones,
+    zeros,
+    matmul,
+    eye,
+    average,
+    zeros_like,
+    exp,
+    log,
+)
 from numpy.linalg import norm
 from numpy.random import default_rng
 from scipy.stats import multivariate_normal
 from scipy.special import logsumexp
 from scipy.linalg import sqrtm
 from rareeventestimation.era.EMGM import EMGM
-from rareeventestimation.era.EMvMFNM import EMvMFNM, lognakagamipdf, logvMFpdf, vMFNM_sample
+from rareeventestimation.era.EMvMFNM import (
+    EMvMFNM,
+    lognakagamipdf,
+    logvMFpdf,
+    vMFNM_sample,
+)
 
 
 class MixtureModel:
@@ -44,8 +61,7 @@ class GaussianMixture(MixtureModel):
         """
         if weights_sample is None:
             weights_sample = ones(sample.shape[0]) / sample.shape[0]
-        means, covs, self.weights = EMGM(
-            sample.T, weights_sample, self.num_comps)
+        means, covs, self.weights = EMGM(sample.T, weights_sample, self.num_comps)
         self.means = means.T  # (num_comp,d)
         self.covs = moveaxis(covs, -1, 0)  # new shape (num_comp,d,d)
         self.fitted = True
@@ -82,7 +98,8 @@ class GaussianMixture(MixtureModel):
         logpdf_evals_comp = zeros((sample.shape[0], self.num_comps))
         for i, (m, c) in enumerate(zip(self.means, self.covs)):
             logpdf_evals_comp[..., i] = multivariate_normal.logpdf(
-                sample, mean=m, cov=c)
+                sample, mean=m, cov=c
+            )
         return logsumexp(logpdf_evals_comp, axis=1, b=self.weights)
 
     def pdf(self, sample: ndarray) -> ndarray:
@@ -97,8 +114,7 @@ class GaussianMixture(MixtureModel):
         assert self.fitted, "Fit GM before accessing parameters!"
         pdf_evals_comp = zeros((sample.shape[0], self.num_comps))
         for i, (m, c) in enumerate(zip(self.means, self.covs)):
-            pdf_evals_comp[..., i] = multivariate_normal.pdf(
-                sample, mean=m, cov=c)
+            pdf_evals_comp[..., i] = multivariate_normal.pdf(sample, mean=m, cov=c)
         return average(pdf_evals_comp, axis=1, weights=self.weights)
 
     def predict(self, sample: ndarray) -> ndarray:
@@ -114,7 +130,8 @@ class GaussianMixture(MixtureModel):
         logpdf_evals_comp = zeros((sample.shape[0], self.num_comps))
         for i, (m, c) in enumerate(zip(self.means, self.covs)):
             logpdf_evals_comp[..., i] = multivariate_normal.logpdf(
-                sample, mean=m, cov=c)
+                sample, mean=m, cov=c
+            )
         return argmax(logpdf_evals_comp, axis=1)
 
     def get_cov_roots(self) -> ndarray:
@@ -154,7 +171,8 @@ class VMFNMixture(MixtureModel):
         if weights_sample is None:
             weights_sample = ones(sample.shape[0]) / sample.shape[0]
         self.mu, self.kappa, self.m, self.omega, self.alpha = EMvMFNM(
-            sample.T, weights_sample, self.num_comps)
+            sample.T, weights_sample, self.num_comps
+        )
         self.fitted = True
         self.num_comps = len(self.alpha)
 
@@ -168,7 +186,9 @@ class VMFNMixture(MixtureModel):
             ndarray: (N,d) array with samples.
         """
         assert self.fitted, "Fit vMFNM before accessing parameters!"
-        return vMFNM_sample(self.mu.T, self.kappa, self.omega, self.m, self.alpha, N, rng=rng)
+        return vMFNM_sample(
+            self.mu.T, self.kappa, self.omega, self.m, self.alpha, N, rng=rng
+        )
 
     def logpdf(self, sample: ndarray) -> ndarray:
         """Evaluate logpdf of vMFNM in sample
@@ -182,11 +202,11 @@ class VMFNMixture(MixtureModel):
         assert self.fitted, "Fit vMFNM before accessing parameters!"
         logpdf_evals_comp = zeros((sample.shape[0], self.num_comps)) * nan
         for i in range(self.num_comps):
-            sample_r = norm(sample, ord = 2, axis=1)
-            sample_norm = sample / sample_r[:,None]
-            vmf = logvMFpdf(sample_norm.T, self.mu[...,i], self.kappa[...,i])
-            nk = lognakagamipdf(sample_r, self.m[...,i], self.omega[...,i])
-            logpdf_evals_comp[:, i] = vmf + nk - (sample.shape[-1]-1)*log(sample_r) 
+            sample_r = norm(sample, ord=2, axis=1)
+            sample_norm = sample / sample_r[:, None]
+            vmf = logvMFpdf(sample_norm.T, self.mu[..., i], self.kappa[..., i])
+            nk = lognakagamipdf(sample_r, self.m[..., i], self.omega[..., i])
+            logpdf_evals_comp[:, i] = vmf + nk - (sample.shape[-1] - 1) * log(sample_r)
         return logsumexp(logpdf_evals_comp, axis=1, b=self.alpha)
 
     def pdf(self, sample: ndarray) -> ndarray:
@@ -213,8 +233,7 @@ class VMFNMixture(MixtureModel):
         assert self.fitted, "Fit vMFNM before accessing parameters!"
         logpdf_evals_comp = zeros((self.num_comps, sample.shape[0])) * nan
         for i in range(self.num_comps):
-            logpdf_evals_comp[i, ...] = logvMFpdf(sample.T, self.mu[..., i], self.kappa[i]) \
-                + lognakagamipdf(sample.T, self.m[..., i], self.omega[..., i])
+            logpdf_evals_comp[i, ...] = logvMFpdf(
+                sample.T, self.mu[..., i], self.kappa[i]
+            ) + lognakagamipdf(sample.T, self.m[..., i], self.omega[..., i])
         return argmax(logpdf_evals_comp, axis=0)
-
-    

@@ -1,13 +1,22 @@
 """Class for results of Solver class."""
-from typing import Callable
-from numpy import arange, array, ndarray, zeros, nan, zeros_like,maximum, minimum
+from numpy import ndarray
 from rareeventestimation.problem.problem import Problem
 
 
 class Solution:
     """Organize the history of the method `Solver.solve()`."""
 
-    def __init__(self, ensemble_hist: ndarray, temp_hist: ndarray, lsf_eval_hist: ndarray, prob_fail_hist: ndarray, costs: int, msg: str, num_steps=None, other=None) -> None:
+    def __init__(
+        self,
+        ensemble_hist: ndarray,
+        temp_hist: ndarray,
+        lsf_eval_hist: ndarray,
+        prob_fail_hist: ndarray,
+        costs: int,
+        msg: str,
+        num_steps=None,
+        other=None,
+    ) -> None:
         """
         Construct instance of Solution.
 
@@ -40,9 +49,7 @@ class Solution:
         self.d = d
         self.other = other
 
-
-
-    def __compute_rel_error(self, prob: Problem)->None:
+    def __compute_rel_error(self, prob: Problem) -> None:
         """
         Compute and save relative error of estimated probability of failure.
 
@@ -52,12 +59,14 @@ class Solution:
         Notes:
             Prints warning if `prob.prob_fail_true` is `None`.
         """
-        assert prob.prob_fail_true is not None, "Cannot not compute relative error as `Problem.prob_fail_true` is not set."
-        self.prob_fail_r_err = abs(
-            self.prob_fail_hist - prob.prob_fail_true) / prob.prob_fail_true
-    
+        assert (
+            prob.prob_fail_true is not None
+        ), "Cannot not compute relative error as `Problem.prob_fail_true` is not set."
+        self.prob_fail_r_err = (
+            abs(self.prob_fail_hist - prob.prob_fail_true) / prob.prob_fail_true
+        )
 
-    def get_rel_err(self, prob=None)->float:
+    def get_rel_err(self, prob=None) -> float:
         """Return relative error, if `prob` has the attribute `prob_fail_true`.
 
         Args:
@@ -66,6 +75,8 @@ class Solution:
         Returns:
             float: Relative error between estimates and truth.
         """
-        assert prob is not None, "Need problem to compute rel. error. Please provide the problem!"
+        assert (
+            prob is not None
+        ), "Need problem to compute rel. error. Please provide the problem!"
         self.__compute_rel_error(prob)
         return self.prob_fail_r_err

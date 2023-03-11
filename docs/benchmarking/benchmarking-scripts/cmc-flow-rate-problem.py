@@ -1,7 +1,5 @@
 # %%
 import rareeventestimation as ree
-import numpy as np
-import argparse
 
 # parser = argparse.ArgumentParser()
 # parser.add_argument("--dir", type=str,
@@ -18,19 +16,21 @@ problem_list = [ree.prob_convex]
 
 
 def main():
-    total = len(solver_list)*len(problem_list)
+    total = len(solver_list) * len(problem_list)
     counter = 1
     for problem in problem_list:
         for i, solver in enumerate(solver_list):
             print(
-                f"({counter}/{total}) {problem.name}, {num_runs} Samples, with {solver.name}")
-            ree.do_multiple_solves(problem,
-                                   solver,
-                                   1,
-                                   dir="./",  # args.dir,
-                                   prefix=f"{problem.name}".replace(
-                                       " ", "_"),
-                                   save_other=True)
+                f"({counter}/{total}) {problem.name}, {num_runs} Samples, with {solver.name}"
+            )
+            ree.do_multiple_solves(
+                problem,
+                solver,
+                1,
+                dir="./",  # args.dir,
+                prefix=f"{problem.name}".replace(" ", "_"),
+                save_other=True,
+            )
             counter += 1
 
 

@@ -3,11 +3,10 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dir", type=str,
-                    default="./docs/benchmarking/data/enkf_flow_rate")
-parser.add_argument("--counter",
-                    type=int,
-                    default=0)
+parser.add_argument(
+    "--dir", type=str, default="./docs/benchmarking/data/enkf_flow_rate"
+)
+parser.add_argument("--counter", type=int, default=0)
 
 args = parser.parse_args()
 
@@ -50,23 +49,25 @@ num_runs = 100
 
 
 def main():
-    total = len(solver_list)*len(sample_sizes)*len(problem_list)
+    total = len(solver_list) * len(sample_sizes) * len(problem_list)
     counter = 1
     for problem in problem_list:
         for i, solver in enumerate(solver_list):
             for s in sample_sizes:
                 if counter > args.counter:
                     print(
-                        f"({counter}/{total}) {problem.name}, {s} Samples, with {solver.name}")
+                        f"({counter}/{total}) {problem.name}, {s} Samples, with {solver.name}"
+                    )
                     problem.set_sample(s, seed=s)
-                    ree.do_multiple_solves(problem,
-                                           solver,
-                                           num_runs,
-                                           dir=args.dir,
-                                           prefix=f"{problem.name} {s}".replace(
-                                               " ", "_"),
-                                           save_other=False,
-                                           addtnl_cols=kwarg_list[i])
+                    ree.do_multiple_solves(
+                        problem,
+                        solver,
+                        num_runs,
+                        dir=args.dir,
+                        prefix=f"{problem.name} {s}".replace(" ", "_"),
+                        save_other=False,
+                        addtnl_cols=kwarg_list[i],
+                    )
                 counter += 1
 
 

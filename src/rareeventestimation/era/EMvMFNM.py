@@ -1,13 +1,13 @@
-from re import S
 import numpy as np
 import scipy as sp
 from numpy.random import default_rng
+
 """
 ---------------------------------------------------------------------------
 Perform soft EM algorithm for fitting the von Mises-Fisher-Nakagami mixture model.
 ---------------------------------------------------------------------------
 Created by:
-Sebastian Geyer (s.geyer@tum.de), 
+Sebastian Geyer (s.geyer@tum.de),
 Felipe Uribe
 Iason Papaioannou
 Daniel Straub
@@ -28,9 +28,9 @@ Input:
 ---------------------------------------------------------------------------
 Output:
 * mu    : mean directions
-* kappa : approximated concentration parameter 
+* kappa : approximated concentration parameter
 * m     : approximated shape parameter
-* omega : spread parameter 
+* omega : spread parameter
 * alpha : distribution weights
 ---------------------------------------------------------------------------
 Based on:
@@ -65,8 +65,8 @@ def EMvMFNM(X, W, k):
         if np.size(M, axis=1) != np.size(u, axis=0):
             M = M[:, u]  # remove empty components
 
-        if np.size(u, axis=0)==2:
-            if all(M[:,0] == 0) or all(M[:,1]==0):
+        if np.size(u, axis=0) == 2:
+            if all(M[:, 0] == 0) or all(M[:, 1] == 0):
                 print("error")
 
         [mu, kappa, m, omega, alpha] = maximization(X_norm, W, R, M)
@@ -79,10 +79,10 @@ def EMvMFNM(X, W, k):
 
     if converged:
         pass
-        #print('Converged in', t, 'steps.')
+        # print('Converged in', t, 'steps.')
     else:
         pass
-        #print('Not converged in ', maxiter, ' steps.')
+        # print('Not converged in ', maxiter, ' steps.')
 
     return mu, kappa, m, omega, alpha
 
@@ -95,16 +95,20 @@ def EMvMFNM(X, W, k):
 # --------------------------------------------------------------------------
 def initialization(X, k):
     # Random initialization
-    #np.random.seed(1234)
+    # np.random.seed(1234)
     n = np.size(X, axis=1)
     idx = np.random.choice(range(n), k)
     m = X[:, idx]
-    label = np.argmax(np.matmul(m.T, X) - np.sum(m * m, axis=0).reshape(-1, 1) / 2, axis=0)
+    label = np.argmax(
+        np.matmul(m.T, X) - np.sum(m * m, axis=0).reshape(-1, 1) / 2, axis=0
+    )
     u = np.unique(label)
     while k != len(u):
         idx = np.random.choice(range(n), k)
         m = X[:, idx]
-        label = np.argmax(np.matmul(m.T, X) - np.sum(m * m, axis=0).reshape(-1, 1) / 2, axis=0)
+        label = np.argmax(
+            np.matmul(m.T, X) - np.sum(m * m, axis=0).reshape(-1, 1) / 2, axis=0
+        )
         u = np.unique(label)
 
     M = np.zeros([n, k], dtype=int)
@@ -141,12 +145,18 @@ def expectation(X, W, R, mu, kappa, m, omega, alpha):
 
     # loglikelihood as tolerance criterion
     logvMF_weighted = logvMF + np.log(alpha)  # bsxfun(@plus,logvMF,log(alpha))
-    lognakagami_weighted = lognakagami + np.log(alpha)  # bsxfun(@plus,lognakagami,log(alpha))
+    lognakagami_weighted = lognakagami + np.log(
+        alpha
+    )  # bsxfun(@plus,lognakagami,log(alpha))
     T_vMF = logsumexp(logvMF_weighted, 1)
     T_nakagami = logsumexp(lognakagami_weighted, 1)
 
     llh1 = np.array(
-        [np.sum(W * T_vMF, axis=0) / np.sum(W, axis=0), np.sum(W * T_nakagami, axis=0) / np.sum(W, axis=0)]).squeeze()
+        [
+            np.sum(W * T_vMF, axis=0) / np.sum(W, axis=0),
+            np.sum(W * T_nakagami, axis=0) / np.sum(W, axis=0),
+        ]
+    ).squeeze()
     llh = llh1
 
     return M, llh
@@ -173,14 +183,14 @@ def maximization(X, W, R, M):
 
     # approximated concentration parameter
     xi = np.minimum(norm_mu / nk, 0.95)
-    kappa = (xi * d - xi ** 3) / (1 - xi ** 2)
+    kappa = (xi * d - xi**3) / (1 - xi**2)
 
     # spread parameter
     omega = np.matmul(M.T, R * R).T / np.sum(M, axis=0)
 
     # approximated shape parameter
-    mu4 = np.matmul(M.T, R ** 4).T / np.sum(M, axis=0)
-    m = omega ** 2 / (mu4 - omega ** 2)
+    mu4 = np.matmul(M.T, R**4).T / np.sum(M, axis=0)
+    m = omega**2 / (mu4 - omega**2)
     m[m < 0] = d / 2
     m[m > 20 * d] = d / 2
 
@@ -196,15 +206,19 @@ def logvMFpdf(X, mu, kappa):
     mu = mu.reshape(-1, 1)
     if kappa == 0:
         # unit hypersphere uniform log pdf
-        A =np.log(d) + np.log(np.pi ** (d / 2)) - sp.special.gammaln(d / 2 + 1)
+        A = np.log(d) + np.log(np.pi ** (d / 2)) - sp.special.gammaln(d / 2 + 1)
         y = -A
     elif kappa > 0:
-        c = (d / 2 - 1) * np.log(kappa) - (d / 2) * np.log(2 * np.pi) - logbesseli(d / 2 - 1, kappa)
+        c = (
+            (d / 2 - 1) * np.log(kappa)
+            - (d / 2) * np.log(2 * np.pi)
+            - logbesseli(d / 2 - 1, kappa)
+        )
         q = np.matmul((mu * kappa).T, X)
         y = q + c.T
         y = y.squeeze()
     else:
-        raise ValueError('Concentration parameter kappa must not be negative!')
+        raise ValueError("Concentration parameter kappa must not be negative!")
 
     return y
 
@@ -214,7 +228,12 @@ def logvMFpdf(X, mu, kappa):
 # Returns the log of the nakagami-pdf
 # --------------------------------------------------------------------------
 def lognakagamipdf(X, m, om):
-    y = np.log(2) + m * (np.log(m) - np.log(om) - X * X / om) + np.log(X) * (2 * m - 1) - sp.special.gammaln(m)
+    y = (
+        np.log(2)
+        + m * (np.log(m) - np.log(om) - X * X / om)
+        + np.log(X) * (2 * m - 1)
+        - sp.special.gammaln(m)
+    )
 
     return y.squeeze()
 
@@ -232,10 +251,10 @@ def logbesseli(nu, x):
         # n    = np.size(x, axis=0)
         n = 1  # since x is always scalar here
         frac = x / nu
-        square = np.ones(n) + frac ** 2
+        square = np.ones(n) + frac**2
         root = np.sqrt(square)
         eta = root + np.log(frac) - np.log(np.ones(n) + root)
-        logb = - np.log(np.sqrt(2 * np.pi * nu)) + nu * eta - 0.25 * np.log(square)
+        logb = -np.log(np.sqrt(2 * np.pi * nu)) + nu * eta - 0.25 * np.log(square)
 
     return logb
 
@@ -270,6 +289,7 @@ def dummyvar(idx):
 
     return d
 
+
 # ===========================================================================
 # --------------------------------------------------------------------------
 # Returns samples from the von Mises-Fisher-Nakagami mixture
@@ -280,8 +300,8 @@ def vMFNM_sample(mu, kappa, omega, m, alpha, N, rng=default_rng()):
         # sampling the radius
         #     pd=makedist('Nakagami','mu',m,'omega',omega)
         #     R=pd.random(N,1)
-        #R = np.sqrt(sp.stats.gamma.rvs(a=m, scale=omega / m, size=[N, 1],random_state=seed))
-        R = np.sqrt(rng.gamma(m, scale=omega/m, size=(N,1)))
+        # R = np.sqrt(sp.stats.gamma.rvs(a=m, scale=omega / m, size=[N, 1],random_state=seed))
+        R = np.sqrt(rng.gamma(m, scale=omega / m, size=(N, 1)))
         # sampling on unit hypersphere
         X_norm = vsamp(mu.T, kappa, N, rng=rng)
 
@@ -300,12 +320,15 @@ def vMFNM_sample(mu, kappa, omega, m, alpha, N, rng=default_rng()):
             # sampling the radius
             # R[R_last:R_last + z[p], :] = np.sqrt(
             #     sp.stats.gamma.rvs(a=m[:, p], scale=omega[:, p] / m[:, p], size=[z[p], 1], random_state=seed))
-            R[R_last:R_last + z[p], :] = np.sqrt(
-                rng.gamma(m[:, p], scale=omega[:, p] / m[:, p], size=[z[p], 1]))
+            R[R_last : R_last + z[p], :] = np.sqrt(
+                rng.gamma(m[:, p], scale=omega[:, p] / m[:, p], size=[z[p], 1])
+            )
             R_last = R_last + z[p]
 
             # sampling on unit hypersphere
-            X_norm[X_last:X_last + z[p], :] = vsamp(mu[p, :].T, kappa[p], z[p], rng=rng)
+            X_norm[X_last : X_last + z[p], :] = vsamp(
+                mu[p, :].T, kappa[p], z[p], rng=rng
+            )
             X_last = X_last + z[p]
 
             # clear pd
@@ -315,31 +338,37 @@ def vMFNM_sample(mu, kappa, omega, m, alpha, N, rng=default_rng()):
 
     return X
 
+
 # ===========================================================================
 # --------------------------------------------------------------------------
 # Returns samples from the von Mises-Fisher distribution
 # --------------------------------------------------------------------------
 def vsamp(center, kappa, n, rng=default_rng()):
     d = np.size(center, axis=0)  # Dimensionality
-    l = kappa  # shorthand
-    t1 = np.sqrt(4 * l * l + (d - 1) * (d - 1))
-    b = (-2 * l + t1) / (d - 1)
+    t1 = np.sqrt(4 * kappa * kappa + (d - 1) * (d - 1))
+    b = (-2 * kappa + t1) / (d - 1)
     x0 = (1 - b) / (1 + b)
     X = np.zeros([n, d])
     m = (d - 1) / 2
-    c = l * x0 + (d - 1) * np.log(1 - x0 * x0)
+    c = kappa * x0 + (d - 1) * np.log(1 - x0 * x0)
 
     for i in range(n):
         t = -1000
         u = 1
         while t < np.log(u):
-            z = rng.beta(m,m) #sp.stats.beta.rvs(m, m, random_state=seed) # z is a beta rand var
-            u = rng.uniform()#sp.stats.uniform.rvs(random_state=seed)  # u is unif rand var
+            z = rng.beta(
+                m, m
+            )  # sp.stats.beta.rvs(m, m, random_state=seed) # z is a beta rand var
+            u = (
+                rng.uniform()
+            )  # sp.stats.uniform.rvs(random_state=seed)  # u is unif rand var
             w = (1 - (1 + b) * z) / (1 - (1 - b) * z)
-            t = l * w + (d - 1) * np.log(1 - x0 * w) - c
+            t = kappa * w + (d - 1) * np.log(1 - x0 * w) - c
 
         v = hs_sample(1, d - 1, 1, rng=rng)
-        X[i, :d - 1] = np.sqrt(1 - w * w) * v  # X[i,:d-1] = np.matmul(np.sqrt(1-w*w),v.T)
+        X[i, : d - 1] = (
+            np.sqrt(1 - w * w) * v
+        )  # X[i,:d-1] = np.matmul(np.sqrt(1-w*w),v.T)
         X[i, d - 1] = w
 
     [v, b] = house(center)
@@ -350,6 +379,7 @@ def vsamp(center, kappa, n, rng=default_rng()):
 
     return X
 
+
 # Returns uniformly distributed samples from the surface of an
 # n-dimensional hypersphere
 # --------------------------------------------------------------------------
@@ -358,12 +388,14 @@ def vsamp(center, kappa, n, rng=default_rng()):
 # R: radius of hypersphere
 # --------------------------------------------------------------------------
 def hs_sample(N, n, R, rng=default_rng()):
-    Y = rng.normal(size=(N,n))# sp.stats.norm.rvs(size=(n, N), random_state=seed)  # randn(n,N)
-    return R * Y / np.linalg.norm(Y,axis=1, keepdims=True)
+    Y = rng.normal(
+        size=(N, n)
+    )  # sp.stats.norm.rvs(size=(n, N), random_state=seed)  # randn(n,N)
+    return R * Y / np.linalg.norm(Y, axis=1, keepdims=True)
     # Y = Y.T
     # norm = np.tile(np.sqrt(np.sum(Y ** 2, axis=1)), [1, n])
     # X = Y / norm * R  # X = np.matmul(Y/norm,R)
-    #return X
+    # return X
 
 
 # ===========================================================================
@@ -377,8 +409,8 @@ def hs_sample(N, n, R, rng=default_rng()):
 def house(x):
     x = x.squeeze()
     n = len(x)
-    s = np.matmul(x[:n - 1].T, x[:n - 1])
-    v = np.concatenate([x[:n - 1], np.array([1.0])]).squeeze()
+    s = np.matmul(x[: n - 1].T, x[: n - 1])
+    v = np.concatenate([x[: n - 1], np.array([1.0])]).squeeze()
     if s == 0:
         b = 0
     else:
@@ -395,5 +427,3 @@ def house(x):
     v = v.reshape(-1, 1)
 
     return [v, b]
-
-

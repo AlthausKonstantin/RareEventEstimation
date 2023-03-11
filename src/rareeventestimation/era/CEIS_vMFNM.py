@@ -11,7 +11,7 @@ from rareeventestimation.era.ERANataf import ERANataf
 Cross entropy-based importance sampling with vMFNM-distribution
 ---------------------------------------------------------------------------
 Created by:
-Sebastian Geyer (s.geyer@tum.de), 
+Sebastian Geyer (s.geyer@tum.de),
 Felipe Uribe
 Iason Papaioannou
 Daniel Straub
@@ -27,7 +27,7 @@ www.era.bgu.tum.de
 Version 2019-02
 ---------------------------------------------------------------------------
 Comments:
-* The LSF must be coded to accept the full set of samples and no one by one 
+* The LSF must be coded to accept the full set of samples and no one by one
   (see line 124)
 ---------------------------------------------------------------------------
 Input:
@@ -42,7 +42,7 @@ Output:
 * Pr        : probability of failure
 * lv        : total number of levels
 * N_tot     : total number of samples
-* gamma_hat : intermediate levels 
+* gamma_hat : intermediate levels
 * samplesU  : object with the samples in the standard normal space
 * samplesX  : object with the samples in the original space
 * k_fin     : final number of distributions in the mixture
@@ -53,33 +53,45 @@ Based on:
    To appear in Structural Safety
 2."A new flexible mixture model for cross entropy based importance sampling".
    Papaioannou et al. (2018)
-   In preparation.   
+   In preparation.
 ---------------------------------------------------------------------------
 """
 
 
 def CEIS_vMFNM(N, p, g_fun, distr, k_init):
     if (N * p != np.fix(N * p)) or (1 / p != np.fix(1 / p)):
-        raise RuntimeError('N*p and 1/p must be positive integers. Adjust N and p accordingly')
+        raise RuntimeError(
+            "N*p and 1/p must be positive integers. Adjust N and p accordingly"
+        )
 
     # initial check if there exists a Nataf object
     if isinstance(distr, ERANataf):  # use Nataf transform (dependence)
         dim = len(distr.Marginals)  # number of random variables (dimension)
-        u2x = lambda u: distr.U2X(u)  # from u to x
 
-    elif isinstance(distr[0], ERADist):  # use distribution information for the transformation (independence)
+        def u2x(u):
+            return distr.U2X(u)  # from u to x
+
+    elif isinstance(
+        distr[0], ERADist
+    ):  # use distribution information for the transformation (independence)
         # Here we are assuming that all the parameters have the same distribution !!!
         # Adjust accordingly otherwise
         dim = len(distr)  # number of random variables (dimension)
-        u2x = lambda u: distr[0].icdf(sp.stats.norm.cdf(u))  # from u to x
+
+        def u2x(u):
+            return distr[0].icdf(sp.stats.norm.cdf(u))  # from u to x
+
     else:
-        raise RuntimeError('Incorrect distribution. Please create an ERADist/Nataf object!')
+        raise RuntimeError(
+            "Incorrect distribution. Please create an ERADist/Nataf object!"
+        )
 
     if dim < 2:
-        raise RuntimeError('Sorry, the vMFN-model can only be applied to d > 1!')
+        raise RuntimeError("Sorry, the vMFN-model can only be applied to d > 1!")
 
     # LSF in standard space
-    G_LSF = lambda u: g_fun(u2x(u))
+    def G_LSF(u):
+        return g_fun(u2x(u))
 
     # %% Initialization of variables and storage
     j = 0  # initial level
@@ -139,13 +151,15 @@ def CEIS_vMFNM(N, p, g_fun, distr, k_init):
 
         # obtaining estimator gamma
         gamma_hat[j + 1] = np.maximum(0, np.nanpercentile(geval, p * 100))
-        #print('\nIntermediate failure threshold: ', gamma_hat[j + 1])
+        # print('\nIntermediate failure threshold: ', gamma_hat[j + 1])
 
         # Indicator function
-        I = geval <= gamma_hat[j + 1]
+        idx = geval <= gamma_hat[j + 1]
 
         # EM algorithm
-        [mu, kappa, m, omega, alpha] = EMvMFNM(X[I, :].T, np.exp(W_log[I, :]), k_init)
+        [mu, kappa, m, omega, alpha] = EMvMFNM(
+            X[idx, :].T, np.exp(W_log[idx, :]), k_init
+        )
 
         # Assigning updated parameters
         mu_hat = mu.T
@@ -156,11 +170,11 @@ def CEIS_vMFNM(N, p, g_fun, distr, k_init):
 
     # store the needed steps
     lv = j
-    gamma_hat = gamma_hat[:lv + 1]
+    gamma_hat = gamma_hat[: lv + 1]
 
     # Calculation of Probability of failure
-    I = (geval <= gamma_hat[j])
-    Pr = 1 / N * np.sum(np.exp(W_log[I, :]))
+    idx = geval <= gamma_hat[j]
+    Pr = 1 / N * np.sum(np.exp(W_log[idx, :]))
 
     # transform the samples to the physical/original space
     samplesX = list()
@@ -184,7 +198,7 @@ def CEIS_vMFNM(N, p, g_fun, distr, k_init):
 def hs_sample(N, n, R):
     Y = sp.stats.norm.rvs(size=(n, N))  # randn(n,N)
     Y = Y.T
-    norm = np.tile(np.sqrt(np.sum(Y ** 2, axis=1)), [1, n])
+    norm = np.tile(np.sqrt(np.sum(Y**2, axis=1)), [1, n])
     X = Y / norm * R  # X = np.matmul(Y/norm,R)
 
     return X
@@ -218,12 +232,15 @@ def vMFNM_sample(mu, kappa, omega, m, alpha, N):
 
         for p in range(k):
             # sampling the radius
-            R[R_last:R_last + z[p], :] = np.sqrt(
-                sp.stats.gamma.rvs(a=m[:, p], scale=omega[:, p] / m[:, p], size=[z[p], 1]))
+            R[R_last : R_last + z[p], :] = np.sqrt(
+                sp.stats.gamma.rvs(
+                    a=m[:, p], scale=omega[:, p] / m[:, p], size=[z[p], 1]
+                )
+            )
             R_last = R_last + z[p]
 
             # sampling on unit hypersphere
-            X_norm[X_last:X_last + z[p], :] = vsamp(mu[p, :].T, kappa[p], z[p])
+            X_norm[X_last : X_last + z[p], :] = vsamp(mu[p, :].T, kappa[p], z[p])
             X_last = X_last + z[p]
 
             # clear pd
@@ -240,13 +257,12 @@ def vMFNM_sample(mu, kappa, omega, m, alpha, N):
 # --------------------------------------------------------------------------
 def vsamp(center, kappa, n):
     d = np.size(center, axis=0)  # Dimensionality
-    l = kappa  # shorthand
-    t1 = np.sqrt(4 * l * l + (d - 1) * (d - 1))
-    b = (-2 * l + t1) / (d - 1)
+    t1 = np.sqrt(4 * kappa * kappa + (d - 1) * (d - 1))
+    b = (-2 * kappa + t1) / (d - 1)
     x0 = (1 - b) / (1 + b)
     X = np.zeros([n, d])
     m = (d - 1) / 2
-    c = l * x0 + (d - 1) * np.log(1 - x0 * x0)
+    c = kappa * x0 + (d - 1) * np.log(1 - x0 * x0)
 
     for i in range(n):
         t = -1000
@@ -255,10 +271,12 @@ def vsamp(center, kappa, n):
             z = sp.stats.beta.rvs(m, m)  # z is a beta rand var
             u = sp.stats.uniform.rvs()  # u is unif rand var
             w = (1 - (1 + b) * z) / (1 - (1 - b) * z)
-            t = l * w + (d - 1) * np.log(1 - x0 * w) - c
+            t = kappa * w + (d - 1) * np.log(1 - x0 * w) - c
 
         v = hs_sample(1, d - 1, 1)
-        X[i, :d - 1] = np.sqrt(1 - w * w) * v  # X[i,:d-1] = np.matmul(np.sqrt(1-w*w),v.T)
+        X[i, : d - 1] = (
+            np.sqrt(1 - w * w) * v
+        )  # X[i,:d-1] = np.matmul(np.sqrt(1-w*w),v.T)
         X[i, d - 1] = w
 
     [v, b] = house(center)
@@ -283,11 +301,15 @@ def vMF_logpdf(X, mu, kappa):
         A = np.log(d) + np.log(np.pi ** (d / 2)) - sp.special.gammaln(d / 2 + 1)
         y = -A * np.ones([1, n])
     elif kappa > 0:
-        c = (d / 2 - 1) * np.log(kappa) - (d / 2) * np.log(2 * np.pi) - logbesseli(d / 2 - 1, kappa)
+        c = (
+            (d / 2 - 1) * np.log(kappa)
+            - (d / 2) * np.log(2 * np.pi)
+            - logbesseli(d / 2 - 1, kappa)
+        )
         q = np.matmul((mu * kappa).T, X)  # bsxfun(@times,mu,kappa)'*X
         y = q + c.T  # bsxfun(@plus,q,c')
     else:
-        raise ValueError('Kappa must not be negative!')
+        raise ValueError("Kappa must not be negative!")
 
     return y
 
@@ -297,7 +319,12 @@ def vMF_logpdf(X, mu, kappa):
 # Returns the value of the log-nakagami-pdf
 # --------------------------------------------------------------------------
 def nakagami_logpdf(X, m, om):
-    y = np.log(2) + m * (np.log(m) - np.log(om) - X ** 2 / om) + np.log(X) * (2 * m - 1) - sp.special.gammaln(m)
+    y = (
+        np.log(2)
+        + m * (np.log(m) - np.log(om) - X**2 / om)
+        + np.log(X) * (2 * m - 1)
+        - sp.special.gammaln(m)
+    )
 
     return y
 
@@ -339,13 +366,19 @@ def likelihood_ratio_log(X, mu, kappa, omega, m, alpha):
     f_u = -A
 
     # chi log pdf
-    f_chi = np.log(2) * (1 - dim / 2) + np.log(R) * (dim - 1) - 0.5 * R ** 2 - sp.special.gammaln(dim / 2)
+    f_chi = (
+        np.log(2) * (1 - dim / 2)
+        + np.log(R) * (dim - 1)
+        - 0.5 * R**2
+        - sp.special.gammaln(dim / 2)
+    )
 
     # logpdf of the standard distribution (uniform combined with chi distribution)
     f_log = f_u + f_chi
     W_log = f_log - h_log
 
     return W_log
+
 
 def vMFNM_density(X, mu, kappa, omega, m, alpha):
     k = len(alpha)
@@ -375,8 +408,6 @@ def vMFNM_density(X, mu, kappa, omega, m, alpha):
         # mixture log pdf
         h_log = logsumexp(h_log, 1)
 
-
-
     return np.exp(h_log)
 
 
@@ -391,8 +422,8 @@ def vMFNM_density(X, mu, kappa, omega, m, alpha):
 def house(x):
     x = x.squeeze()
     n = len(x)
-    s = np.matmul(x[:n - 1].T, x[:n - 1])
-    v = np.concatenate([x[:n - 1], np.array([1.0])]).squeeze()
+    s = np.matmul(x[: n - 1].T, x[: n - 1])
+    v = np.concatenate([x[: n - 1], np.array([1.0])]).squeeze()
     if s == 0:
         b = 0
     else:
@@ -424,10 +455,10 @@ def logbesseli(nu, x):
         # n    = np.size(x, axis=0)
         n = 1  # since x is always scalar here
         frac = x / nu
-        square = np.ones(n) + frac ** 2
+        square = np.ones(n) + frac**2
         root = np.sqrt(square)
         eta = root + np.log(frac) - np.log(np.ones(n) + root)
-        logb = - np.log(np.sqrt(2 * np.pi * nu)) + nu * eta - 0.25 * np.log(square)
+        logb = -np.log(np.sqrt(2 * np.pi * nu)) + nu * eta - 0.25 * np.log(square)
 
     return logb
 
