@@ -9,7 +9,6 @@ jobs:
       #----------------------------------------------
       #       check-out repo and set-up python
       #----------------------------------------------
-      - run: npm i lcov-badge-generator
       - name: Check out repository
         uses: actions/checkout@v3
       - name: Set up python
@@ -56,7 +55,7 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          coverage run pytest --noconftest -o "testpaths=test" -m "not slow" -n 2 --cov=src test
+          coverage run -m pytest --noconftest -o "testpaths=test" -m "not slow" -n 2 --cov=src test
           coverage report -m
 
       - name: Coverage Badge
