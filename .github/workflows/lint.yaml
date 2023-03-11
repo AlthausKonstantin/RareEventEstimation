@@ -1,3 +1,4 @@
+# Example script from https://github.com/rickstaa/action-black
 name: Run black
 
 on: [push]
@@ -10,17 +11,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
-      - name: Set up python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install black
-      - name: Run black
+      - name: Check files using the black formatter
+        uses: rickstaa/action-black@v1
         id: action_black
-        uses: psf/black@stable
+        with:
+          black_args: "."
       - name: Create Pull Request
         if: steps.action_black.outputs.is_formatted == 'true'
         uses: peter-evans/create-pull-request@v3

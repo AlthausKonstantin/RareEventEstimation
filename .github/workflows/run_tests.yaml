@@ -49,8 +49,10 @@ jobs:
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
+      - name: Set up test suite
+        run: |
+          pip install pytest-cov pytest-xdist
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest --noconftest -o "testpaths=test" -m "not slow" test
-          coverage report
+          pytest --noconftest -o "testpaths=test" -m "not slow" --cov-config=.coveragerc -n 2 test
