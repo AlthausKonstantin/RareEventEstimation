@@ -58,7 +58,7 @@ jobs:
           source .venv/bin/activate
           coverage run -m pytest  -m "not slow" test/test_cbree.py
 
-      - name: Coverage Badge
+      - name: Make Coverage Badge
         uses: tj-actions/coverage-badge-py@v2
 
       - name: Verify Changed files
@@ -67,17 +67,22 @@ jobs:
         with:
             files: coverage.svg
 
-      - name: Commit files
+      - name: Commit badges 
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         run: |
-            git config --local user.email "github-actions[bot]@KonstantinAlthaus.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git add coverage.svg
-            git commit -m "chore: updated coverage.svg"
-
+          git clone https://github.com/AlthausKonstantin/rareeventestimation --branch gh-pages --single-branch gh-pages
+          cp coverage.svg gh-pages/_static/images/coverage_badge.svg
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "chore: update coverage badge" -a || true
+          # The above command will fail if no changes were present, so we ignore
+          # the return code.
       - name: Push changes
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ secrets.github_token }}
-          branch: ${{ github.ref }}
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
