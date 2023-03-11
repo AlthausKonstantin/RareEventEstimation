@@ -52,11 +52,11 @@ jobs:
       - name: Set up test suite
         run: |
           source .venv/bin/activate
-          pip install pytest-cov pytest-xdist coverage coverage-badge
+          pip install  coverage coverage-badge
       - name: Run tests
         run: |
           source .venv/bin/activate
-          coverage run -m --debug=trace pytest --noconftest -o "testpaths=test" -m "not slow" -n 2 --cov=src test/test_cbree.py
+          coverage run -m pytest  -m "not slow" test/test_cbree.py
 
       - name: Coverage Badge
         uses: tj-actions/coverage-badge-py@v2
