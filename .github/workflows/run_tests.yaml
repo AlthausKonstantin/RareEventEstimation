@@ -55,6 +55,7 @@ jobs:
           pip install pytest-cov pytest-xdist coverage coverage-badge
       - name: Run tests
         run: |
+          source .venv/bin/activate
           coverage run -m pytest --noconftest -o "testpaths=test" -m "not slow" -n 2 --cov=src test
           coverage report -m
 
