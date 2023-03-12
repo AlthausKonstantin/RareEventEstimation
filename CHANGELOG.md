@@ -2,7 +2,6 @@
 
 ## v0.2.0
 - upgraded python and package to latest version.
-- rammarly-languageserver --stdioadded documentation.
 - added ci/cd pipeline.
 - added new notebooks with figures for forthcoming paper.
 - reorganized project.
