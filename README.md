@@ -4,7 +4,7 @@
 [![test](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/run_tests.yaml/badge.svg)](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/run_tests.yaml)
 [![build documentation](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/build_documentation.yaml/badge.svg)](https://github.com/AlthausKonstantin/rareeventestimation/actions/workflows/build_documentation.yaml)
 
-Estimate rare events with consensus based sampling and other methods.
+Estimate rare events with consensus-based sampling and other methods.
 ## Installation
 ```bash
 $ pip install rareeventestimation
@@ -57,14 +57,14 @@ print(solution.prob_fail_hist[-1]) # print estimate of last (=best) iteration
 - Numerical studies of all methods 
 
 ## About
-This package was developed during my masters thesis and the publication of a paper about a new method for rare event estimation (the CBREE method).
+This package was developed during my master's thesis and the publication of a paper about a new method for rare event estimation (the CBREE method).
 Therefore this package contains multiple notebooks which produce the figures used in those two publications.
 For the exact location have a look at the  content section
 
 ## Content
 Here is an incomplete overview of the folder structure of the package.  
 * If you are here to reproduce figures from the literature, the tree will point you to the right directory.
-If you run a notebook the in one of the `figures_*` folders,
+If you run a notebook in one of the `figures_*` folders,
 the underlying precomputed data is downloaded from [archive.org](https://archive.org/details/konstantinalthaus-rareeventestimation-data).
 The data is encoded as `.json` files and you can have look at those online before loading them.  
 Of course you can also compute the data yourself using the

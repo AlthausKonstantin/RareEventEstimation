@@ -1,12 +1,13 @@
 [tool.poetry]
 name = "rareeventestimation"
-version = "0.1.3"
+version = "0.2.0"
 description = "Estimate rare events with consensus based sampling and other methods."
 authors = ["Konstantin Althaus <althaus.konstantin.95@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/AlthausKonstantin/rareeventestimation"
 homepage = "https://pypi.org/project/rareeventestimation/"
+documentation = "https://althauskonstantin.github.io/rareeventestimation/"
 
 [tool.poetry.dependencies]
 python = ">=3.8"
