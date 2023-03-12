@@ -1,5 +1,6 @@
 # read version from installed package
 from importlib.metadata import version
+
 # The following tells flake9 to ignore the imported but not used error
 # flake8: noqa: F401
 __version__ = version("rareeventestimation")
@@ -30,7 +31,8 @@ from rareeventestimation.evaluation.convergence_analysis import (
     my_number_formatter,
     vec_to_latex_set,
     list_to_latex,
-    squeeze_problem_names)
+    squeeze_problem_names,
+)
 from rareeventestimation.evaluation.visualization import (
     make_mse_plots,
     make_rel_error_plot,
@@ -42,8 +44,16 @@ from rareeventestimation.evaluation.visualization import (
     plot_cbree_parameters,
     sr_to_color_dict,
     get_color,
-    get_continuous_color)
-from rareeventestimation.utilities import importance_sampling, radial_gaussian_logpdf, gaussian_logpdf, my_log_cvar, my_softmax, get_slope
+    get_continuous_color,
+)
+from rareeventestimation.utilities import (
+    importance_sampling,
+    radial_gaussian_logpdf,
+    gaussian_logpdf,
+    my_log_cvar,
+    my_softmax,
+    get_slope,
+)
 from rareeventestimation.problem.flowrate_problem import (
     make_flowrate_problem,
     DiffusionPDE,
