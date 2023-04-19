@@ -62,7 +62,7 @@ print(solution.prob_fail_hist[-1]) # print estimate of last (=best) iteration
 This package was developed during my master's thesis and the publication of a paper about a new method for rare event estimation (the CBREE method).
 Therefore this package contains multiple notebooks which produce the figures used in those two publications.  
 
-If you want to reproduce the figures of the paper **K. Althaus I. Papaioannou, and E. Ullmann, Consensus-based rare event estimation**,
+If you want to reproduce the figures of the paper **K. Althaus I. Papaioannou, and E. Ullmann, Consensus-based rare event estimation, (2023), https://doi.org/10.48550/arXiv.2304.09077**,
 use the notebooks in `docs/figures_paper`.
 
 
