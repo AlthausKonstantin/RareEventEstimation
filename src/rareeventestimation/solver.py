@@ -175,8 +175,8 @@ class CBREE(Solver):
 
     def __init__(
         self,
-        stepsize_adaptivity=True,
         stepsize_tolerance=0.5,
+        t_step=-1,
         num_steps=100,
         tgt_fun="algebraic",
         observation_window=5,
@@ -262,14 +262,12 @@ class CBREE(Solver):
             callback (Callable, optional): Apply this function to the current `CBREECache` after each iteration. Defaults to None.
         """
         super().__init__()
-        if stepsize_adaptivity is True:
-            self.stepsize_adaptivity = stepsize_adaptivity
-        else:
-            assert (
-                stepsize_adaptivity > 0
-            ), f"sigma_adaptivity must be either a positive number or `True`. I got '{sigma_adaptivity}'"
-            self.t_step = stepsize_adaptivity  # constant stepsize
+        if t_step > 0:
             self.stepsize_adaptivity = False
+            self.t_step = t_step
+        else:
+            self.stepsize_adaptivity =  True 
+        print(f'adaptive: {self.stepsize_adaptivity}')
 
         if isinstance(sigma_adaptivity, str):
             assert sigma_adaptivity in ["cvar", "sfp"]
