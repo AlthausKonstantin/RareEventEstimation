@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rareeventestimation"
-version = "0.2.0"
+version = "0.3.0"
 description = "Estimate rare events with consensus based sampling and other methods."
 authors = ["Konstantin Althaus <althaus.konstantin.95@gmail.com>"]
 license = "MIT"

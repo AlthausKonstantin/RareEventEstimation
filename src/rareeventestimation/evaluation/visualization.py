@@ -642,9 +642,10 @@ def make_efficiency_plot(
             this_df_box = this_df_box.sort_values(x, key=x_axis_sorting_key)
             xx_box = this_df_box.loc[:, x].values
             yy_box = this_df_box.loc[:, y_box].values
+            msk = yy_box > 0
             box = Box(
-                x=xx_box,
-                y=yy_box,
+                x=xx_box[msk],
+                y=yy_box[msk],
                 marker_color=CMAP[1],
                 name="Estimates",
                 legendgroup="2",
@@ -670,7 +671,12 @@ def make_efficiency_plot(
             fig.add_trace(line, row=row_idx + 1, col=col_idx + 1)
             counter += 1
             for idx, fun in zip((0, 1), (amin, amax)):
-                secondary_y_limits[idx] = fun([secondary_y_limits[idx], fun(yy_box)])
+                try:
+                    secondary_y_limits[idx] = fun(
+                        [secondary_y_limits[idx], fun(yy_box)]
+                    )
+                except Exception:
+                    Warning(f"bad data")
     # clean up dfs
     for df in [df_line, df_box]:
         df.drop(columns=["fc", "fr"], inplace=True, errors="ignore")

@@ -175,8 +175,8 @@ class CBREE(Solver):
 
     def __init__(
         self,
-        stepsize_adaptivity=True,
         stepsize_tolerance=0.5,
+        t_step=-1,
         num_steps=100,
         tgt_fun="algebraic",
         observation_window=5,
@@ -202,12 +202,9 @@ class CBREE(Solver):
         The constructor can handle the following keyword arguments.
 
         Args:
-            stepsize_adaptivity (bool|Real, optional):: Whether to update `t_step` adaptively. Defaults to `True`.
-            Can be one of:
-                * `True`
-                * positive number: Fix stepsize of exponential Euler method. Corresponds to gridsize `-log(t_step)`.
-
             stepsize_tolerance (float, optional): Tolerance for updating `t_step`. Defaults to 0.5.
+            t_step (float, optional): Set to a positive number to set a constant
+            stepssize. Otherwise choose stepsize adaptively. Defaults to -1.
             num_steps (int, optional): Maximal number of steps. Defaults to 100.
             tgt_fun (str, optional): Which smoothing function should be used.
                 Can be one of:
@@ -262,14 +259,12 @@ class CBREE(Solver):
             callback (Callable, optional): Apply this function to the current `CBREECache` after each iteration. Defaults to None.
         """
         super().__init__()
-        if stepsize_adaptivity is True:
-            self.stepsize_adaptivity = stepsize_adaptivity
-        else:
-            assert (
-                stepsize_adaptivity > 0
-            ), f"sigma_adaptivity must be either a positive number or `True`. I got '{sigma_adaptivity}'"
-            self.t_step = stepsize_adaptivity  # constant stepsize
+        if t_step > 0:
             self.stepsize_adaptivity = False
+            self.t_step = t_step
+        else:
+            self.stepsize_adaptivity = True
+        print(f"adaptive: {self.stepsize_adaptivity}")
 
         if isinstance(sigma_adaptivity, str):
             assert sigma_adaptivity in ["cvar", "sfp"]

@@ -1,12 +1,16 @@
 # Changelog
 
+## v0.3.0
+- new interface of CBREE solver for constant stepsize
+- update packages
+- added new notebooks with figures for forthcoming paper.
+
 ## v0.2.0
 - upgraded python and package to latest version.
 - added ci/cd pipeline.
 - added new notebooks with figures for forthcoming paper.
 - reorganized project.
 
-documentation = "https://althauskonstantin.github.io/rareeventestimation/"
 ## v0.1.3
 - security update in dependencies: https://github.com/advisories/GHSA-9jmq-rx5f-8jwq
 
