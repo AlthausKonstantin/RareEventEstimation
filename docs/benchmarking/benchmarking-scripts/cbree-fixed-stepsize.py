@@ -17,8 +17,8 @@ keywords = {
     "mixture_model": ["GM"],
     "cvar_tgt": [1],
     "tgt_fun": ["algebraic"],
-     "observation_window": [2],
-     't_step':  [m * 10 ** ex for m in [1,3,6] for ex in range(-6,-1,1)]
+    "observation_window": [2],
+    "t_step": [m * 10**ex for m in [1, 3, 6] for ex in range(-6, -1, 1)],
 }
 
 
@@ -74,7 +74,9 @@ def main():
                         solver,
                         num_runs,
                         dir=args.dir,
-                        prefix=f"{problem.name} adaptivity {counter} ".replace(" ", "_"),
+                        prefix=f"{problem.name} adaptivity {counter} ".replace(
+                            " ", "_"
+                        ),
                         save_other=False,
                         other_list=other,
                         addtnl_cols=kwarg_list[i],

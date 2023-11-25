@@ -101,13 +101,13 @@ def do_multiple_solves(
                     df[c] = [solution.other[c].tolist()]
             if other_list is not None:
                 for c in other_list:
-                    val =solution.other.get(c, asarray([pd.NA])) 
-                    if hasattr(val, 'tolist'):
+                    val = solution.other.get(c, asarray([pd.NA]))
+                    if hasattr(val, "tolist"):
                         df[c] = val.tolist()
                     if isinstance(val, list):
                         df[c] = val
                     else:
-                         df[c] = [val]
+                        df[c] = [val]
                     try:
                         df[c] = df[c].map(list)
                     except TypeError:

@@ -263,8 +263,8 @@ class CBREE(Solver):
             self.stepsize_adaptivity = False
             self.t_step = t_step
         else:
-            self.stepsize_adaptivity =  True 
-        print(f'adaptive: {self.stepsize_adaptivity}')
+            self.stepsize_adaptivity = True
+        print(f"adaptive: {self.stepsize_adaptivity}")
 
         if isinstance(sigma_adaptivity, str):
             assert sigma_adaptivity in ["cvar", "sfp"]
