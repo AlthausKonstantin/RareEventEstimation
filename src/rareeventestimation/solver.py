@@ -202,12 +202,9 @@ class CBREE(Solver):
         The constructor can handle the following keyword arguments.
 
         Args:
-            stepsize_adaptivity (bool|Real, optional):: Whether to update `t_step` adaptively. Defaults to `True`.
-            Can be one of:
-                * `True`
-                * positive number: Fix stepsize of exponential Euler method. Corresponds to gridsize `-log(t_step)`.
-
             stepsize_tolerance (float, optional): Tolerance for updating `t_step`. Defaults to 0.5.
+            t_step (float, optional): Set to a positive number to set a constant
+            stepssize. Otherwise choose stepsize adaptively. Defaults to -1.
             num_steps (int, optional): Maximal number of steps. Defaults to 100.
             tgt_fun (str, optional): Which smoothing function should be used.
                 Can be one of:
