@@ -672,9 +672,11 @@ def make_efficiency_plot(
             counter += 1
             for idx, fun in zip((0, 1), (amin, amax)):
                 try:
-                    secondary_y_limits[idx] = fun([secondary_y_limits[idx], fun(yy_box)])
+                    secondary_y_limits[idx] = fun(
+                        [secondary_y_limits[idx], fun(yy_box)]
+                    )
                 except Exception:
-                    Warning(f'bad data')
+                    Warning(f"bad data")
     # clean up dfs
     for df in [df_line, df_box]:
         df.drop(columns=["fc", "fr"], inplace=True, errors="ignore")
