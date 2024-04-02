@@ -69,6 +69,7 @@ jobs:
           mv docs/figures_thesis/_build/pdf/book.pdf docs/pdf/figures_thesis.pdf
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          git pull --rebase
           git add docs/pdf
           git commit -m "chore: compile jupyter notebooks" -a || true
           # The above command will fail if no changes were present, so we ignore
