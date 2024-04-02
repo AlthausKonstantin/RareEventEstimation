@@ -67,6 +67,8 @@ jobs:
           source .venv/bin/activate
           jb build docs/figures_paper/ --builder pdfhtml
       - name: Commit pdfs 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p docs/pdf
           mv docs/figures_paper/_build/pdf/book.pdf docs/pdf/figures_paper.pdf
@@ -77,8 +79,4 @@ jobs:
           git commit -m "chore: compile jupyter notebooks" -a || true
           # The above command will fail if no changes were present, so we ignore
           # the return code.
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          branch: ${{ github.ref }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git push
