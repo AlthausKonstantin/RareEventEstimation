@@ -1,7 +1,7 @@
 # example from https://github.com/marketplace/actions/install-poetry-action#testing
 name: build pdfs
 
-on: push
+on: pull_request
 
 jobs:
   build_pdf:
@@ -53,7 +53,7 @@ jobs:
       - name: Checkout PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr checkout ${{ github.event.pull_request.number }}
+        run: gh pr checkout ${{ github.event.pull_request.number }} -f
       - name: Build PDFs
         run: |
           source .venv/bin/activate
