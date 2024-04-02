@@ -65,8 +65,8 @@ jobs:
       - name: Commit pdfs 
         run: |
           mkdir -p docs/pdf
-          mv docs/figures_paper/_build/pdf/book.pdf docs/pdfs/figures_paper.pdf
-          mv docs/figures_thesis/_build/pdf/book.pdf docs/pdfs/figures_thesis.pdf
+          mv docs/figures_paper/_build/pdf/book.pdf docs/pdf/figures_paper.pdf
+          mv docs/figures_thesis/_build/pdf/book.pdf docs/pdf/figures_thesis.pdf
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add docs/pdf
