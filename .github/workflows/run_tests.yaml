@@ -52,7 +52,7 @@ jobs:
       - name: Set up test suite
         run: |
           source .venv/bin/activate
-          pip install  coverage coverage-badge nbmake
+          pip install  coverage coverage-badge nbmake kaleido
       - name: Run tests
         run: |
           source .venv/bin/activate
