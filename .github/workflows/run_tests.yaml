@@ -59,9 +59,11 @@ jobs:
           coverage run -m pytest  -m "not slow" test
       - name: Run notebooks in for paper
         run: |
+          source .venv/bin/activate
           pytest --nbmake --nbmake-timeout=300000 docs/figures_paper/*.ipynb
       - name: Run notebooks in for thesis
         run: |
+          source .venv/bin/activate
           pytest --nbmake --nbmake-timeout=300000 docs/figures_thesis/*.ipynb
       - name: Make Coverage Badge
         uses: tj-actions/coverage-badge-py@v2
