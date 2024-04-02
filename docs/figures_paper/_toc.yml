@@ -1,0 +1,10 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: README
+chapters:
+- file: contour_plots_toy_problems
+- file: nonlinear_oscillator_evaluation
+- file: flow_rate_problem_evaluation
+- file: g_vs_vmfn

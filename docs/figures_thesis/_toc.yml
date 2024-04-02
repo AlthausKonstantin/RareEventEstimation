@@ -1,0 +1,15 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: README
+chapters:
+- file: performance_in_low_dimensions
+- file: contour_plots_toy_problems
+- file: divergence_check
+- file: resampling_in_final_step
+- file: toy_problems_in_higher_dimensions
+- file: constant_vs_adaptive_beta
+- file: dimension-study-visualization
+- file: diffusion_problem_evaluation
+- file: indicator_functions_performance_comparison

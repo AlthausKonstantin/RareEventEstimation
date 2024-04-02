@@ -1,9 +1,10 @@
 # example from https://github.com/marketplace/actions/install-poetry-action#testing
-name: test
+name: build pdfs
 
-on: push
+on: pull_request
+
 jobs:
-  test:
+  build_pdf:
     runs-on: ubuntu-latest
     steps:
       #----------------------------------------------
@@ -47,49 +48,35 @@ jobs:
       - name: Install project
         run: poetry install --no-interaction
       #----------------------------------------------
-      #              run test suite
+      #              build pdfs
       #----------------------------------------------
-      - name: Set up test suite
+      - name: Checkout PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr checkout ${{ github.event.pull_request.number }} -f
+      - name: Build PDFs
         run: |
           source .venv/bin/activate
-          pip install  coverage coverage-badge nbmake kaleido
-      - name: Run tests
+          pip install jupyter-book pyppeteer kaleido
+      - name: Make PDF of notebooks in figures_thesis
         run: |
           source .venv/bin/activate
-          coverage run -m pytest  -m "not slow" test
-      - name: Run notebooks in for paper
+          jb build docs/figures_thesis/ --builder pdfhtml
+      - name: Make PDF of notebooks in figures_paper
         run: |
           source .venv/bin/activate
-          pytest --nbmake --nbmake-timeout=300000 docs/figures_paper/*.ipynb
-      - name: Run notebooks in for thesis
+          jb build docs/figures_paper/ --builder pdfhtml
+      - name: Commit pdfs 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          source .venv/bin/activate
-          pytest --nbmake --nbmake-timeout=300000 docs/figures_thesis/*.ipynb
-      - name: Make Coverage Badge
-        uses: tj-actions/coverage-badge-py@v2
-
-      - name: Verify Changed files
-        uses: tj-actions/verify-changed-files@v13
-        id: verify-changed-files
-        with:
-            files: coverage.svg
-
-      - name: Commit badges 
-        if: steps.verify-changed-files.outputs.files_changed == 'true'
-        run: |
-          git clone https://github.com/AlthausKonstantin/rareeventestimation --branch gh-pages --single-branch gh-pages
-          cp coverage.svg gh-pages/_static/images/coverage_badge.svg
-          cd gh-pages
+          mkdir -p docs/pdf
+          mv docs/figures_paper/_build/pdf/book.pdf docs/pdf/figures_paper.pdf
+          mv docs/figures_thesis/_build/pdf/book.pdf docs/pdf/figures_thesis.pdf
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "chore: update coverage badge" -a || true
+          git add docs/pdf
+          git commit -m "chore: compile jupyter notebooks" -a || true
           # The above command will fail if no changes were present, so we ignore
           # the return code.
-      - name: Push changes
-        if: steps.verify-changed-files.outputs.files_changed == 'true'
-        uses: ad-m/github-push-action@master
-        with:
-          branch: gh-pages
-          directory: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git push
