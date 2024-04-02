@@ -1,4 +1,4 @@
-## Purpose
+## Supplementary Material Paper
 
 The purpose of this folder is to make the experiments presented in the paper
 **K. Althaus I. Papaioannou, and E. Ullmann, Consensus-based rare event estimation, (2023), https://doi.org/10.48550/arXiv.2304.09077**
